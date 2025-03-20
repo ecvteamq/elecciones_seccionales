@@ -1,0 +1,236 @@
+<div class="card">
+    <div class="card-body">
+        <div style="text-align: center">
+            <p-divider align="center" type="dashed">
+                <div class="inline-flex align-items-center">
+                    <b style="font-size: 20px;">Actas registradas </b>
+                    <i class="pi pi-book mr-2"></i>
+                </div>
+            </p-divider>
+        </div>
+
+        <p-table #dt [value]="actas" [totalRecords]="actas && actas.length? actas.length: 0"
+            styleClass="p-datatable-gridlines" [rows]="10" [paginator]="true"
+            [globalFilterFields]="['id', 'nombre','estado']" dataKey="id" [loading]="loadingTable" [rowHover]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
+            [showCurrentPageReport]="true">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 4rem; text-align: center">#</th>
+                    <th style="width: 10rem; text-align: center">
+                        N° Acta
+                        <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions" type="text"
+                            field="numero_acta" display="menu"></p-columnFilter>
+                    </th>
+                    <th style="width: 10rem; text-align: center">
+                        Dignidad
+                        <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions" type="text"
+                            field="dignidad.descripcion" display="menu"></p-columnFilter>
+                    </th>
+                    <th style="width: 8rem; text-align: center">
+                        Provincia
+                        <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions" type="text"
+                            field="provincia" display="menu"></p-columnFilter>
+                    </th>
+                    <th style="width: 8rem; text-align: center">
+                        Cantón
+                        <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions" type="text"
+                            field="canton" display="menu"></p-columnFilter>
+                    </th>
+                    <th style="width: 8rem; text-align: center">
+                        Parroquia
+                        <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions" type="text"
+                            field="parroquia" display="menu"></p-columnFilter>
+                    </th>
+                    <th style="width: 4rem; text-align: center">N° Junta</th>
+                    <th style="width: 4rem; text-align: center">Genero</th>
+                    <!-- <th style="width: 4rem; text-align: center">Recinto Electoral</th> -->
+                    <th style="width: 8rem; text-align: center">
+                        Recinto Electoral
+                        <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions" type="text"
+                            field="recinto.nombre_recinto" display="menu"></p-columnFilter>
+                    </th>
+                    <th style="width: 4rem; text-align: center">Acciones</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-acta let-i="rowIndex">
+                <tr>
+                    <td style="text-align: center">{{i+1}}</td>
+                    <td>{{acta.numero_acta}}</td>
+                    <td>{{acta.dignidad.descripcion}}</td>
+                    <td>{{acta.provincia.nombre}}</td>
+                    <td>{{acta.canton.nombre}}</td>
+                    <td>{{acta.parroquia.nombre}}</td>
+                    <td>{{acta.numero_junta}}</td>
+                    <td>{{acta.genero}}</td>
+                    <td>{{acta.recinto.nombre_recinto}}</td>
+                    <td class="x-caption">
+                        <div class="row">
+                            <button title="Editar" icon="pi pi-pencil" pButton type="button" label=""
+                                (click)="edit(acta)"
+                                class="p-button-raised p-button-rounded p-button-success p-button-sm"></button>
+                            <!-- <button title="eliminar" icon="pi pi-trash" pButton type="button" label=""
+                                (click)="delete(acta)"
+                                class="p-button-raised p-button-rounded p-button-danger p-button-sm"></button> -->
+                        </div>
+
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="10" style="text-align: center">No hay actas registradas.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+
+        <p-dialog header="Acta" [(visible)]="displayModal" [style]="{'width':'55vw', 'background-color':'purple'}"
+            styleClass="modalStyle" [draggable]="true" [resizable]="false" (onHide)="onHide()">
+
+            <div class="card-content">
+                <form [formGroup]="myForm" (ngSubmit)="onSubmit()">
+
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="text-danger fw-bold" for="nombres"> Total empadronados <label
+                                        class="text-danger">*</label> </label>
+                                <input (change)="calcularInasistentes()" formControlName="total_votante" type="text" class="form-control" id="nombres">
+                                <div *ngIf="validErrorForm('total_votante')">
+                                    <p class="text-danger">{{validTypeMsgForm('Total empadronados','total_votante')}}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="text-danger fw-bold" for="nombres"> Votos candidatos <label
+                                        class="text-danger">*</label> </label>
+                                <input  (change)="calcularInasistentes()" formControlName="voto_valido" type="text" class="form-control" id="nombres">
+                                <div *ngIf="validErrorForm('voto_valido')">
+                                    <p class="text-danger">{{validTypeMsgForm('Votos candidatos','voto_valido')}}</p>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="text-danger fw-bold" for="nombres"> Votos blancos <label
+                                        class="text-danger">*</label> </label>
+                                <input (change)="calcularInasistentes()" formControlName="voto_blanco" type="text" class="form-control" id="nombres">
+                                <div *ngIf="validErrorForm('voto_blanco')">
+                                    <p class="text-danger">{{validTypeMsgForm('Votos blanco','voto_blanco')}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="text-danger fw-bold" for="nombres"> Votos nulos <label
+                                        class="text-danger">*</label> </label>
+                                <input (change)="calcularInasistentes()" formControlName="voto_nulo" type="text" class="form-control" id="nombres">
+                                <div *ngIf="validErrorForm('voto_nulo')">
+                                    <p class="text-danger">{{validTypeMsgForm('Votos nulos','voto_nulo')}}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="text-danger fw-bold" for="nombres"> Votos inasistentes <label
+                                        class="text-danger">*</label> </label>
+                                <input formControlName="inasistente" type="text" class="form-control" id="nombres">
+                                <div *ngIf="validErrorForm('inasistente')">
+                                    <p class="text-danger">{{validTypeMsgForm('Inasistentes','inasistente')}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <p-table #dt [value]="detalles" [totalRecords]="detalles && detalles.length? detalles.length: 0"
+                        styleClass="p-datatable-gridlines" [rows]="50" [paginator]="true" dataKey="id"
+                        [loading]="loadingTable" [rowHover]="true" class="mt-5"
+                        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
+                        [showCurrentPageReport]="true">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th style="width: 4rem; text-align: center">#</th>
+
+
+                                <th style="width: 10rem; text-align: center">
+                                    Candidato / Partido
+
+                                </th>
+                                <th style="width: 4rem; text-align: center;max-width: 4rem;">
+                                    Lista
+
+                                </th>
+                                <th style="width: 8rem; text-align: center">
+                                    Votos
+
+                                </th>
+
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-detalle let-i="rowIndex">
+                            <tr>
+                                <td style="text-align: center">{{i+1}}</td>
+                                <td>{{detalle.candidato.id !=null ? detalle.candidato.nombre_papeleta: detalle.partido}}
+                                </td>
+                                <td style="max-width: 1rem;">{{detalle.lista}}</td>
+                                <td [pEditableColumn]="detalle.votos" pEditableColumnField="votos">
+                                    <div class="row">
+                                        <div class="col-sm">
+                                            <p-cellEditor>
+                                                <ng-template pTemplate="input">
+                                                    <!-- (blur)="actualizarVotosValidos($event,detalle)" -->
+                                                    <!-- (keyup)="disabledDetail($event)" -->
+                                                    <input (keypress)="vl.soloNumeros($event)" pInputText type="text"
+                                                    (blur)="actualizarVotosValidos()" [ngModelOptions]="{standalone: true}"
+                                                        [(ngModel)]="detalle.voto">
+                                                </ng-template>
+                                                <ng-template pTemplate="output">
+                                                    {{detalle.voto}}
+                                                </ng-template>
+                                            </p-cellEditor>
+                                        </div>
+
+                                        <!-- <div class="col-sm" *ngIf="candidato.votos">
+                                            <button (click)="buscarCandidatos()" pButton type="button" label=""
+                                                icon="pi pi-trash"
+                                                class="p-button-raised p-button-rounded p-button-info p-button-sm mt-2"></button>
+                                        </div> -->
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="5" style="text-align: center">No hay datos para digitar.</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+
+
+                    <div class="form-group mt-4" style="text-align: end;">
+
+                        <button title="cancelar" icon="pi pi-close" pButton type="button" label="Cancelar"
+                            (click)="limpiarForm()"
+                            class="p-button-raised p-button-rounded p-button-danger p-button-sm"></button>
+
+                        <button pButton type="submit" [disabled]="myForm.invalid"
+                            class="p-button-raised p-button-rounded p-button-success p-button-sm">
+                            {{editMod == true? 'Actualizar':'Crear'}}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </p-dialog>
+
+    </div>
+</div>

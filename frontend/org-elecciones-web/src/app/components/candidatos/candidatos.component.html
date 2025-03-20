@@ -1,0 +1,249 @@
+<div class="card">
+    <div class="card-body">
+        <div style="text-align: center">
+            <h3>
+                Candidatos
+            </h3>
+        </div>
+
+        <div class="row mb-5" style="text-align: right; float: inline-end;">
+            <button value="Nuevo" title="Editar" icon="pi pi-plus" pButton type="button" label="" (click)="add()"
+                class="p-button-raised p-button-rounded p-button-info p-button-sm"></button>
+        </div>
+        <div class="row">
+            <p-tabView>
+                <p-tabPanel header="Candidatos activos">
+                    <p-table #dt [value]="candidatos"
+                        [totalRecords]="candidatos && candidatos.length? candidatos.length: 0"
+                        styleClass="p-datatable-gridlines" [rows]="10" [paginator]="true"
+                        [globalFilterFields]="['id', 'nombre','estado']" dataKey="id" [loading]="loadingTable"
+                        [rowHover]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
+                        [showCurrentPageReport]="true">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th style="width: 4rem; text-align: center">#</th>
+
+                                <th style="width: 8rem; text-align: center">
+                                    Provincia
+                                    <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions"
+                                        type="text" field="provincia.nombre" display="menu"></p-columnFilter>
+                                </th>
+                                <th style="width: 8rem; text-align: center">
+                                    Cantón
+                                    <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions"
+                                        type="text" field="canton.nombre" display="menu"></p-columnFilter>
+                                </th>
+                                <th style="width: 8rem; text-align: center">
+                                    Parroquia
+                                    <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions"
+                                        type="text" field="parroquia" display="menu"></p-columnFilter>
+                                </th>
+                                <th style="width: 10rem; text-align: center">
+                                    Nombre
+                                    <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions"
+                                        type="text" field="nombre" display="menu"></p-columnFilter>
+                                </th>
+                                <th style="width: 10rem; text-align: center">
+                                    Dignidad
+                                    <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions"
+                                        type="text" field="dignidad.descripcion" display="menu"></p-columnFilter>
+                                </th>
+                                <th style="width: 10rem; text-align: center">
+                                    Lista
+                                    <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions"
+                                        type="text" field="lista" display="menu"></p-columnFilter>
+                                </th>
+                                <th style="width: 10rem; text-align: center">
+                                    Partido
+                                    <p-columnFilter [matchMode]="'contains'" [matchModeOptions]="matchModeOptions"
+                                        type="text" field="partido" display="menu"></p-columnFilter>
+                                </th>
+                                <th style="width: 4rem; text-align: center">Estado</th>
+                                <th style="width: 4rem; text-align: center">Acciones</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-usuario let-i="rowIndex">
+                            <tr>
+                                <td style="text-align: center">{{i+1}}</td>
+
+                                <td>{{usuario.provincia.nombre}}</td>
+                                <td>{{usuario.canton.nombre}}</td>
+                                <td>{{ usuario.parroquia}}</td>
+                                <td>{{usuario.nombre}}</td>
+                                <td>{{usuario.dignidad.descripcion}}</td>
+                                <td>{{usuario.lista}}</td>
+                                <td>{{usuario.partido}}</td>
+                                <td>{{usuario.estado}}</td>
+                                <td class="x-caption">
+                                    <div class="row">
+                                        <button title="Editar" icon="pi pi-pencil" pButton type="button" label=""
+                                            (click)="edit(usuario)"
+                                            class="p-button-raised p-button-rounded p-button-success p-button-sm"></button>
+                                        <button title="eliminar" icon="pi pi-trash" pButton type="button" label=""
+                                            (click)="delete(usuario)"
+                                            class="p-button-raised p-button-rounded p-button-danger p-button-sm"></button>
+                                    </div>
+
+                                </td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="9" style="text-align: center">No hay usuarios activos.</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </p-tabPanel>
+
+            </p-tabView>
+        </div>
+
+
+        <p-dialog header="Candidatos" [(visible)]="displayModal" [style]="{'width':'55vw', 'background-color':'purple'}"
+            styleClass="modalStyle" [draggable]="true" [resizable]="false" (onHide)="onHide()">
+
+            <div class="card-content">
+                <form [formGroup]="myForm" (ngSubmit)="onSubmit()">
+
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-group">
+                                <label class="text-danger fw-bold" for="">Dignidad <label class="text-danger">*</label>
+                                </label>
+                                <div class="form-group">
+                                    <p-dropdown [options]="dignidades" formControlName="dignidad"
+                                        optionValue="descripcion" placeholder="Selecciona la dignidad" [filter]="true"
+                                        filterBy="descripcion" [style]="{'width':'100%'}" optionLabel="descripcion"
+                                        [showClear]="true">
+                                    </p-dropdown>
+                                    <div *ngIf="validErrorForm('dignidad')">
+                                        <p class="text-danger">{{validTypeMsgForm('Dignidad','dignidad')}}</p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="col-md">
+                            <div class="form-group">
+                                <label class="fw-bold text-danger" for="">Provincia <label class="text-danger">*</label>
+                                </label>
+                                <div class="form-group">
+                                    <p-dropdown [options]="provincias" formControlName="provincia" optionValue="codigo"
+                                        (onChange)="getCantones()" placeholder="Selecciona la provincia" [filter]="true"
+                                        filterBy="nombre" [style]="{'width':'100%'}" optionLabel="nombre"
+                                        [showClear]="true">
+                                    </p-dropdown>
+                                    <div *ngIf="validErrorForm('provincia')">
+                                        <p class="text-danger">{{validTypeMsgForm('Provincia','provincia')}}</p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md">
+                            <div class="form-group">
+                                <label class="fw-bold text-danger" for="">Cantón <label class="text-danger">*</label>
+                                </label>
+                                <div class="form-group">
+                                    <p-dropdown [options]="cantones" formControlName="canton" optionValue="codigo"
+                                        (onChange)="getParroquiaByCanton()" placeholder="Selecciona el cantón"
+                                        [filter]="true" filterBy="nombre" [style]="{'width':'100%'}"
+                                        optionLabel="nombre" [showClear]="true">
+                                    </p-dropdown>
+                                    <div *ngIf="validErrorForm('canton')">
+                                        <p class="text-danger">{{validTypeMsgForm('Cantón','canton')}}</p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="col-md">
+                            <div class="form-group">
+                                <label for="">Parroquia </label>
+                                <div class="form-group">
+                                    <p-dropdown [options]="parroquias" formControlName="parroquia" optionValue="codigo"
+                                        [filter]="true" filterBy="nombre" placeholder="Selecciona la parroquia"
+                                        [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
+                                    </p-dropdown>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="fw-bold" for="nombres"> Lista </label>
+                                <input formControlName="lista" type="text" class="form-control" id="nombres">
+                                <div *ngIf="validErrorForm('lista')">
+                                    <p class="text-danger">{{validTypeMsgForm('Lista','lista')}}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="fw-bold"> Nombre </label>
+                                <input formControlName="nombre" type="text" class="form-control">
+                                <div *ngIf="validErrorForm('nombre')">
+                                    <p class="text-danger">{{validTypeMsgForm('Nombre','nombre')}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="fw-bold"> Nombre papeleta </label>
+                                <input formControlName="nombre_papeleta" type="text" class="form-control">
+                                <div *ngIf="validErrorForm('nombre_papeleta')">
+                                    <p class="text-danger">{{validTypeMsgForm('Nombre papeleta','nombre_papeleta')}}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md">
+                            <div class="form-group first">
+                                <label class="fw-bold"> Partido </label>
+                                <input formControlName="partido" type="text" class="form-control">
+                                <div *ngIf="validErrorForm('partido')">
+                                    <p class="text-danger">{{validTypeMsgForm('Partido','partido')}}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group mt-4" style="text-align: end;">
+
+                        <button title="cancelar" icon="pi pi-close" pButton type="button" label="Cancelar"
+                            (click)="limpiarForm()"
+                            class="p-button-raised p-button-rounded p-button-danger p-button-sm"></button>
+
+                        <button pButton type="submit" [disabled]="myForm.invalid"
+                            class="p-button-raised p-button-rounded p-button-success p-button-sm">
+                            {{editMod == true? 'Actualizar':'Crear'}}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </p-dialog>
+
+
+        <p-confirmPopup key="conf-1"></p-confirmPopup>
+        <p-confirmPopup key="conf-2"></p-confirmPopup>
+
+    </div>
+</div>

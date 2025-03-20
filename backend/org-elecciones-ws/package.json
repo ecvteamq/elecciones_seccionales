@@ -1,0 +1,31 @@
+{
+  "name": "org-elecciones-ws",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.4",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.7.2",
+    "pg-promise": "^10.11.1",
+    "bluebird": "^3.7.2",
+    "sweetalert2": "^11.3.10"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "engines": {
+    "node": "14.17.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

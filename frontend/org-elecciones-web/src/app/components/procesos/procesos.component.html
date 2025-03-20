@@ -1,0 +1,59 @@
+<div class="card">
+    <div class="card-body">
+        <p-divider align="center" type="dashed">
+            <div class="inline-flex align-items-center">
+                <b style="font-size: 20px;">Proceso masivos de la aplicación </b>
+                <i class="pi pi-angle-double-up mr-2"></i>
+            </div>
+        </p-divider>
+        <br>
+        <p-fieldset legend="Encerar votaciones" [toggleable]="true">
+            <div class="row">
+                <div class="col-sm">
+                    <div class="form-group first">
+                        <label for="total_votantes" class="fw-bold">Esta opción sirve para eliminar todas la votaciones
+                            ingresadas en todas las dignidades ⚠️
+                        </label>
+
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm text-center ">
+                    <button (click)="encerarVotaciones()" pButton type="button" label="Encerar" icon="pi pi-save"
+                        class="p-button-raised p-button-rounded p-button-danger p-button-sm mt-2">
+                    </button>
+
+                </div>
+
+            </div>
+        </p-fieldset>
+        <br>
+        <p-fieldset legend="Aprobar todos los usuarios" [toggleable]="true">
+            <div class="row">
+                <div class="col-sm">
+                    <div class="form-group first">
+                        <label for="total_votantes" class="fw-bold">Aprueba todos los usuarios que se encuentren en
+                            estado
+                            inactivo ⚠️
+                        </label>
+
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm text-center ">
+                    <button (click)="aprobarTodosUsuarios()" pButton type="button" label="Aprobar usuarios"
+                        icon="pi pi-user"
+                        class="p-button-raised p-button-rounded p-button-warning p-button-sm mt-2"></button>
+
+                </div>
+
+            </div>
+        </p-fieldset>
+    </div>
+</div>

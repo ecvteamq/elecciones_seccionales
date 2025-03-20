@@ -1,0 +1,286 @@
+<div class="card">
+    <div class="card-body">
+        <p-divider align="center" type="dashed">
+            <div class="inline-flex align-items-center">
+                <b style="font-size: 20px;">Generación de actas </b>
+                <i class="pi pi-check mr-2"></i>
+            </div>
+        </p-divider>
+        <br>
+        <form [formGroup]="myForm">
+
+            <div class="row">
+
+                <div class="col-md">
+                    <div class="form-group first">
+                        <label class="fw-bold" for="nombres">Nro. Acta</label>
+                        <input formControlName="numero_acta" type="text" class="form-control" id="nombres">
+                        <div *ngIf="validErrorForm('numero_acta')">
+                            <p class="text-danger">{{validTypeMsgForm('Número de Junta','numero_acta')}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md">
+                    <div class="form-group first">
+                        <label class="fw-bold" for="nombres">Tipo de acta</label>
+                        <select (change)="desbloquearTotales()" class="form-select" formControlName="tipo_acta">
+                            <option selected value="">Seleccione el tipo de acta</option>
+                            <option value="G">
+                                General</option>
+                            <option value="ST">
+                                Solo totales</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md">
+                    <div class="form-group">
+                        <label class="text-danger fw-bold" for="">Dignidad <label class="text-danger">*</label> </label>
+                        <div class="form-group">
+                            <p-dropdown [options]="dignidades" formControlName="dignidad"
+                                placeholder="Selecciona la dignidad" [filter]="true" filterBy="descripcion"
+                                [style]="{'width':'100%'}" optionLabel="descripcion" [showClear]="true">
+                            </p-dropdown>
+                            <div *ngIf="validErrorForm('dignidad')">
+                                <p class="text-danger">{{validTypeMsgForm('Dignidad','dignidad')}}</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+
+                <div class="col-md">
+                    <div class="form-group">
+                        <label class="fw-bold text-danger" for="">Provincia <label class="text-danger">*</label>
+                        </label>
+                        <div class="form-group">
+                            <p-dropdown [options]="provincias" formControlName="provincia" optionValue="codigo"
+                                (onChange)="getCantones()" placeholder="Selecciona la provincia" [filter]="true"
+                                filterBy="nombre" [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
+                            </p-dropdown>
+                            <div *ngIf="validErrorForm('provincia')">
+                                <p class="text-danger">{{validTypeMsgForm('Provincia','provincia')}}</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="col-md">
+                    <div class="form-group">
+                        <label class="fw-bold text-danger" for="">Cantón <label class="text-danger">*</label> </label>
+                        <div class="form-group">
+                            <p-dropdown [options]="cantones" formControlName="canton" optionValue="codigo"
+                                (onChange)="getParroquiaByCanton()" placeholder="Selecciona el cantón" [filter]="true"
+                                filterBy="nombre" [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
+                            </p-dropdown>
+                            <div *ngIf="validErrorForm('canton')">
+                                <p class="text-danger">{{validTypeMsgForm('Cantón','canton')}}</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="col-md" *ngIf="myForm.value.tipo_acta  != 'ST' ">
+                    <div class="form-group">
+                        <label for="" class="fw-bold" >Parroquia </label>
+                        <div class="form-group">
+                            <p-dropdown (onChange)="getRecintos()" [options]="parroquias" formControlName="parroquia"
+                                optionValue="codigo" [filter]="true" filterBy="nombre"
+                                placeholder="Selecciona la parroquia" [style]="{'width':'100%'}" optionLabel="nombre"
+                                [showClear]="true">
+                            </p-dropdown>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="row" *ngIf="myForm.value.tipo_acta  != 'ST' ">
+
+                <div class="col-sm">
+                    <div class="form-group first">
+                        <label class="fw-bold " for="nombres">Nro. Junta</label>
+                        <input maxlength="3" (keypress)="vl.soloNumeros($event)" formControlName="numero_junta"
+                            type="text" class="form-control" id="nombres">
+                        <div *ngIf="validErrorForm('numero_junta')">
+                            <p class="text-danger">{{validTypeMsgForm('Número de Junta','numero_junta')}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm">
+                    <div class="form-group first">
+                        <label for="genero" class="text-danger fw-bold">Genero<label
+                                class="text-danger">*</label></label>
+                        <select class="form-select" aria-label="Default select example" formControlName="genero">
+                            <option selected value="">Seleccione el genero</option>
+                            <option value="M">
+                                Masculino</option>
+                            <option value="F">
+                                Femenino</option>
+                        </select>
+                        <div *ngIf="validErrorForm('genero')">
+                            <p class="text-danger">{{validTypeMsgForm('Genero','genero')}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md">
+                    <div class="form-group">
+                        <label for="" class="fw-bold">Recinto electoral 
+                            <!-- <label class="text-danger">*</label> -->
+                        </label>
+                        <div class="form-group">
+                            <!-- (onChange)="obtenerDatosRecinto()" -->
+                            <p-dropdown  [options]="recintos"
+                                formControlName="recinto" [filter]="true" filterBy="nombre_recinto"
+                                placeholder="Selecciona el recinto" [style]="{'width':'100%'}"
+                                optionLabel="nombre_recinto" [showClear]="true" emptyMessage="No hay resultados">
+                            </p-dropdown>
+                        </div>
+                        <!-- <div *ngIf="validErrorForm('recinto')">
+                            <p class="text-danger">{{validTypeMsgForm('Recinto Electoral','recinto')}}</p>
+                        </div> -->
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="row mb-2" *ngIf="myForm.value.tipo_acta  != 'ST' ">
+                <div class="col-sm text-end ">
+                    <button (click)="buscarCandidatos()" pButton type="button" label="Buscar" icon="pi pi-search"
+                        class="p-button-raised p-button-rounded p-button-info p-button-sm mt-2"></button>
+
+                </div>
+
+            </div>
+            <br>
+            <p-fieldset legend="Totales" [toggleable]="true">
+                <div class="row">
+                    <div class="col-sm">
+                        <div class="form-group first">
+                            <label class="fw-bold" for="total_votantes">Total empadronados</label>
+                            <input (change)="calcularInasistentes()"  formControlName="total_votantes" type="text" class="form-control"
+                                id="total_votantes">
+
+                        </div>
+                    </div>
+
+                    <div class="col-sm">
+                        <div class="form-group first">
+                            <label class="fw-bold text-danger" for="votos_validos">Votos candidatos <label
+                                    class="text-danger">*</label> </label>
+                            <input maxlength="7" (keypress)="vl.soloNumeros($event)" (change)="calcularInasistentes()"
+                                formControlName="votos_validos" type="text" class="form-control" id="votos_validos">
+                        </div>
+                    </div>
+
+                    <div class="col-sm">
+                        <div class="form-group first">
+                            <label class="fw-bold" for="votos_blancos">Votos blancos </label>
+                            <input maxlength="7" (keypress)="vl.soloNumeros($event)" (change)="calcularInasistentes()"
+                                formControlName="votos_blancos" type="text" class="form-control" id="votos_blancos">
+                        </div>
+                    </div>
+
+                    <div class="col-sm">
+                        <div class="form-group first">
+                            <label class="fw-bold" for="votos_nulos">Votos nulos</label>
+                            <input maxlength="7" (keypress)="vl.soloNumeros($event)" (change)="calcularInasistentes()"
+                                formControlName="votos_nulos" type="text" class="form-control" id="votos_nulos">
+                        </div>
+                    </div>
+
+                    <div class="col-sm">
+                        <div class="form-group first">
+                            <label class="fw-bold" for="inasistentes">Inasistentes</label>
+                            <input formControlName="inasistentes" type="text" class="form-control" id="inasistentes">
+                        </div>
+                    </div>
+                </div>
+            </p-fieldset>
+
+            <div class="row" *ngIf="myForm.value.tipo_acta  != 'ST' ">
+                <p-table #dt [value]="candidatos" [totalRecords]="candidatos && candidatos.length? candidatos.length: 0"
+                    styleClass="p-datatable-gridlines" [rows]="50" [paginator]="true" dataKey="id"
+                    [loading]="loadingTable" [rowHover]="true" class="mt-5"
+                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
+                    [showCurrentPageReport]="true">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th style="width: 4rem; text-align: center">#</th>
+
+
+                            <th style="width: 10rem; text-align: center">
+                                Candidato / Partido
+
+                            </th>
+                            <th style="width: 4rem; text-align: center;max-width: 4rem;">
+                                Lista
+
+                            </th>
+                            <th style="width: 8rem; text-align: center">
+                                Votos
+
+                            </th>
+
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-candidato let-i="rowIndex">
+                        <tr>
+                            <td style="text-align: center">{{i+1}}</td>
+                            <td>{{candidato.nombre_papeleta}}</td>
+                            <td style="max-width: 1rem;">{{candidato.lista}}</td>
+                            <td [pEditableColumn]="candidato.votos" pEditableColumnField="votos">
+                                <div class="row">
+                                    <div class="col-sm" >
+                                        <p-cellEditor>
+                                            <ng-template pTemplate="input">
+
+                                                <input  (keypress)="vl.soloNumeros($event)" pInputText type="text"
+                                                    (blur)="actualizarVotosValidos()"
+                                                    [ngModelOptions]="{standalone: true}" [(ngModel)]="candidato.votos">
+                                            </ng-template>
+                                            <ng-template pTemplate="output">
+                                                {{candidato.votos}}
+                                            </ng-template>
+                                        </p-cellEditor>
+                                    </div>
+
+                                    <!-- <div class="col-sm" *ngIf="candidato.votos">
+                                        <button (click)="buscarCandidatos()" pButton type="button" label=""
+                                            icon="pi pi-trash"
+                                            class="p-button-raised p-button-rounded p-button-info p-button-sm mt-2"></button>
+                                    </div> -->
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="5" style="text-align: center">No hay datos para digitar.</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col-sm text-center ">
+                    <button (click)="generarActa()" pButton type="button" label="Registrar acta" icon="pi pi-save"
+                        class="p-button-raised p-button-rounded p-button-success p-button-sm mt-2"></button>
+
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+</div>

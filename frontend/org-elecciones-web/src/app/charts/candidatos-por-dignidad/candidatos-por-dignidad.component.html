@@ -1,0 +1,19 @@
+<!-- <chart type="bar" [data]="data" [options]="options"></chart> -->
+<!-- <div style="width: 800px;"><canvas id="acquisitions"></canvas></div> -->
+<mat-card>
+    <mat-card-content>
+        <div style="width:100%;">
+            <h4 class="mb-32">Resultados</h4>
+            
+            <!-- <div class="row">
+                <div class="col-sm text-center ">
+
+                    <button (click)="buscarDetalles()" pButton type="button" label="Buscar" icon="pi pi-search"
+                        class="p-button-raised p-button-rounded p-button-info p-button-sm mt-2"></button>
+
+                </div>
+            </div> -->
+            <p-chart type="bar" [data]="basicData" [options]="basicOptions"></p-chart>
+        </div>
+    </mat-card-content>
+</mat-card>

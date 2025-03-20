@@ -1,0 +1,287 @@
+<div class="d-lg-flex half">
+    <div class="bg order-1 order-md-2" style="background-image: url('assets/images/voting_blue.svg');"></div>
+    <div class="contents order-2 order-md-1">
+
+        <div class="container">
+            <div class="row align-items-center justify-content-left" style="margin-left: 5%;">
+                <div class="col-md-7">
+                    <img src="assets/images/cne.png" style="width: 32%;margin: 0;" alt="">
+                    <h3><strong>Elecciones Seccionales y CPCCS 2023</strong></h3>
+                    <p class="mb-4">Ecuador unido en democracia 🇪🇨</p>
+                    <mat-stepper linear="false" #stepper style="width: 150%;">
+                        <mat-step [stepControl]="myForm">
+                            <form [formGroup]="myForm">
+                                <ng-template matStepLabel>Ubicación</ng-template>
+                                <div class="form-group mt-2">
+                                    <label for="provincia">Provincia<label class="text-danger">*</label></label>
+                                    <select (change)="getCantonesByProvincia()" class="form-select"
+                                        aria-label="Default select example" formControlName="provincia">
+                                        <option selected value="">Seleccione la provincia</option>
+                                        <option *ngFor="let provincia of provincias" value={{provincia.codigo}}>
+                                            {{provincia.nombre}}</option>
+                                    </select>
+                                    <!-- <div>
+                                        <p-dropdown [options]="provincias" formControlName="provincia"
+                                            (onChange)="getCantonesByProvincia()" optionLabel="nombre" [filter]="true"
+                                            filterBy="nombre" [showClear]="true" placeholder="Seleccionar la provincia"
+                                            class="form-group">
+                                            <ng-template pTemplate="selectedItem">
+                                                <div class="provincia-item provincia-item-value">
+                                                    <div>{{myForm.value.provincia.nombre}}</div>
+                                                </div>
+                                            </ng-template>
+                                            <ng-template let-provincia pTemplate="item">
+                                                <div class="provincia-item">
+                                                    <div>{{provincia.nombre}}</div>
+                                                </div>
+                                            </ng-template>
+                                        </p-dropdown>
+                                    </div> -->
+
+                                    <div *ngIf="validErrorForm('provincia')">
+                                        <p class="text-danger">{{validTypeMsgForm('Provincia','provincia')}}</p>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mt-2" *ngIf="myForm.value.provincia">
+                                    <label for="canton">Cantón<label class="text-danger">*</label></label>
+                                    <select (change)="getParroquiaByCanton()" class="form-select"
+                                        aria-label="Default select example" formControlName="canton">
+
+                                        <option selected value="">Seleccione el cantón</option>
+                                        <option *ngFor="let canton of cantones" value={{canton.codigo}}>
+                                            {{canton.nombre}}</option>
+                                    </select>
+
+                                    <!-- <div>
+                                        <p-dropdown [options]="cantones" formControlName="canton"
+                                            (onChange)="getParroquiaByCanton()" optionLabel="nombre" [filter]="true"
+                                            filterBy="nombre" [showClear]="true" placeholder="Seleccionar el canton"
+                                            class="form-group">
+                                            <ng-template pTemplate="selectedItem">
+                                                <div class="canton-item canton-item-value">
+                                                    <div>{{myForm.value.canton.nombre}}</div>
+                                                </div>
+                                            </ng-template>
+                                            <ng-template let-canton pTemplate="item">
+                                                <div class="canton-item">
+                                                    <div>{{canton.nombre}}</div>
+                                                </div>
+                                            </ng-template>
+                                        </p-dropdown>
+                                    </div> -->
+
+                                    <div *ngIf="validErrorForm('canton')">
+                                        <p class="text-danger">{{validTypeMsgForm('Cantón','canton')}}</p>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mt-2" *ngIf="myForm.value.canton">
+                                    <label>Parroquia<label class="text-danger">*</label></label>
+                                    <select class="form-select" aria-label="Default select example"
+                                        formControlName="parroquia">
+
+                                        <option selected value="">Seleccione la parroquia</option>
+                                        <option *ngFor="let parroquia of parroquias" value={{parroquia.codigo}}>
+                                            {{parroquia.nombre}}</option>
+
+                                    </select>
+                                    <!-- <div>
+                                        <p-dropdown [options]="parroquias" formControlName="parroquia"
+                                             optionLabel="nombre"
+                                            [filter]="true" filterBy="nombre" [showClear]="true"
+                                            placeholder="Seleccionar la parroquia" class="form-group">
+                                            <ng-template pTemplate="selectedItem">
+                                                <div class="parroquia-item parroquia-item-value">
+                                                    <div>{{myForm.value.parroquia.nombre}}</div>
+                                                </div>
+                                            </ng-template>
+                                            <ng-template let-parroquia pTemplate="item">
+                                                <div class="parroquia-item">
+                                                    <div>{{parroquia.nombre}}</div>
+                                                </div>
+                                            </ng-template>
+                                        </p-dropdown>
+                                    </div> -->
+                                    <div *ngIf="validErrorForm('parroquia')">
+                                        <p class="text-danger">{{validTypeMsgForm('Parroquia','parroquia')}}</p>
+                                    </div>
+                                </div>
+                                <br>
+
+                                <div>
+                                    <button mat-button matStepperNext>Siguiente</button>
+                                </div>
+                            </form>
+                        </mat-step>
+                        <mat-step [stepControl]="myForm" label="Datos personales">
+                            <form [formGroup]="myForm">
+                                <div class="row">
+                                    <div class="col-sm">
+                                        <div class="form-group first"
+                                            *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                            <label for="nombres">Nombres<label class="text-danger">*</label></label>
+                                            <input formControlName="nombre" type="text" class="form-control"
+                                                id="nombres">
+                                            <div *ngIf="validErrorForm('nombre')">
+                                                <p class="text-danger">{{validTypeMsgForm('Nombres','nombre')}}</p>
+                                            </div>
+                                        </div>
+                                        <br>
+                                    </div>
+
+                                    <div class="col-sm">
+                                        <div class="form-group first"
+                                            *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                            <label for="apellidos">Apellidos<label class="text-danger">*</label></label>
+                                            <input formControlName="apellido" type="text" class="form-control"
+                                                id="apellidos">
+                                            <div *ngIf="validErrorForm('apellido')">
+                                                <p class="text-danger">{{validTypeMsgForm('Apellidos','apellido')}}</p>
+                                            </div>
+                                        </div>
+                                        <br>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-sm">
+                                        <div class="form-group first"
+                                            *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                            <label for="genero">Genero<label class="text-danger">*</label></label>
+                                            <select class="form-select" aria-label="Default select example"
+                                                formControlName="genero">
+                                                <option selected value="">Seleccione el genero</option>
+                                                <option value="M">
+                                                    Masculino</option>
+                                                <option value="F">
+                                                    Femenino</option>
+                                            </select>
+                                            <div *ngIf="validErrorForm('genero')">
+                                                <p class="text-danger">{{validTypeMsgForm('Genero','genero')}}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <br>
+                                    <div class="col-sm">
+                                        <div class="form-group first"
+                                            *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                            <label for="telefono">Teléfono <label
+                                                    class="fw-bold">(opcional)</label></label>
+                                            <input formControlName="telefono" type="text" class="form-control"
+                                                id="telefono">
+                                        </div>
+                                        <br>
+                                    </div>
+                                    <br>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-sm">
+                                        <div class="form-group first"
+                                            *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                            <label for="direccion">Dirección <label
+                                                    class="fw-bold">(opcional)</label></label>
+                                            <input formControlName="direccion" type="text" class="form-control"
+                                                id="direccion">
+                                        </div>
+                                    </div>
+                                    <br>
+                                    <div class="col-sm">
+                                        <div class="form-group first"
+                                            *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                            <label for="recinto">Recinto <label
+                                                    class="fw-bold">(opcional)</label></label>
+                                            <input formControlName="recinto_electoral" type="text" class="form-control"
+                                                id="recinto">
+                                        </div>
+                                    </div>
+                                    <br>
+                                </div>
+
+
+                                <div class="col-sm">
+                                    <div class="form-group first"
+                                        *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                        <label for="junta">Junta <label class="fw-bold">(opcional)</label></label>
+                                        <input formControlName="numero_junta" type="text" class="form-control"
+                                            id="junta">
+                                    </div>
+                                </div>
+                                <br>
+
+                                <div>
+                                    <button mat-button matStepperPrevious>Atrás</button>
+                                    <button mat-button matStepperNext>Siguiente</button>
+                                </div>
+                            </form>
+                        </mat-step>
+                        <mat-step>
+                            <ng-template matStepLabel>Autentificación</ng-template>
+                            <form [formGroup]="myForm">
+                                <div class="form-group first"
+                                    *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                    <label for="cedula">Identificación<label class="text-danger">*</label></label>
+                                    <input formControlName="identificacion" type="text" class="form-control"
+                                        placeholder="C.I" id="cedula">
+                                    <div *ngIf="validErrorForm('identificacion')">
+                                        <p class="text-danger">{{validTypeMsgForm('Identificación','identificacion')}}
+                                        </p>
+                                    </div>
+                                </div>
+                                <br>
+                                <div class="form-group first"
+                                    *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                    <label for="cedula">Contraseña<label class="text-danger">*</label></label>
+                                    <input formControlName="contrasenia" type="password" class="form-control"
+                                        placeholder="Al menos una mayúscula, un caracter numérico y mayor a 8 dígitos"
+                                        id="cedula">
+                                    <div *ngIf="verificarContrasenia('contrasenia')">
+                                        <p class="text-danger">{{verificarContraseniasIguales()}}</p>
+                                    </div>
+                                    <div *ngIf="validErrorForm('contrasenia')">
+                                        <p class="text-danger">{{validTypeMsgForm('Contraseña','contrasenia')}}</p>
+                                    </div>
+                                </div>
+                                <br>
+                                <div class="form-group first"
+                                    *ngIf="myForm.value.provincia && myForm.value.canton && myForm.value.parroquia">
+                                    <label for="cedula">Confirmar Contraseña<label class="text-danger">*</label></label>
+                                    <input formControlName="confirmar_contrasenia" type="password" class="form-control"
+                                        placeholder="Al menos una mayúscula, un caracter numérico y mayor a 8 dígitos"
+                                        id="cedula">
+                                    <div *ngIf="verificarContrasenia('confirmar_contrasenia')">
+                                        <p class="text-danger">{{verificarContraseniasIguales()}}</p>
+                                    </div>
+                                    <div *ngIf="validErrorForm('confirmar_contrasenia')">
+                                        <p class="text-danger">
+                                            {{validTypeMsgForm('Contraseña','confirmar_contrasenia')}}
+                                        </p>
+                                    </div>
+                                </div>
+                                <br>
+                                <div>
+                                    <button mat-button matStepperPrevious>Atrás</button>
+                                    <button mat-button (click)="registrate($event)">Registrate</button>
+                                    <!-- <input type="button" (click)="registrate($event)" value="Registrar"
+                                style="background-color: #226089;" class="btn rounded-pill text-white mt-5"> -->
+                                </div>
+                            </form>
+                        </mat-step>
+                    </mat-stepper>
+                    <div class="d-flex mb-5 mt-2" style="float: right;">
+                        <label class="control control--checkbox mb-0"><span class="caption">ya tengo
+                                cuenta </span>
+                        </label>
+
+                        <span class="ml-auto"><a routerLink="/auth/login"
+                                style="text-decoration: none;color: black;font-weight: bold;margin-left: 10px;"
+                                class="forgot-pass">Iniciar Sesión</a></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>

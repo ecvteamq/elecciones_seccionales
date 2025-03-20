@@ -1,0 +1,302 @@
+<div class="card">
+    <div class="card-body">
+        <div style="text-align: center">
+            <p-divider align="center" type="dashed">
+                <div class="inline-flex align-items-center">
+                    <b style="font-size: 20px;">Reporte de resultados </b>
+                    <i class="pi pi-print mr-2"></i>
+                </div>
+            </p-divider>
+        </div>
+
+        <form [formGroup]="myForm">
+            <div class="row">
+                <div class="col-sm">
+                    <p-fieldset legend="Parametros" [toggleable]="true">
+                        <!-- <div class="row mb-2">
+                            <div class="col-md">
+                                <div class="form-group first">
+                                    <label class="fw-bold" for="nombres">Tipo de acta</label>
+                                    <select (change)="changeTipoActa()" class="form-select" formControlName="tipo_acta">
+                                        <option selected value="">Seleccione el tipo de acta</option>
+                                        <option value="G">
+                                            General</option>
+                                        <option value="ST">
+                                            Solo totales</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div> -->
+                        <label class="text-danger fw-bold">(*) Seleccione primero la dignidad a buscar</label>
+                        <br><br>
+                        <div class="row">
+                            <div class="col-md">
+                                <div class="form-group">
+                                    <label for="" class="fw-bold">Buscar por dignidad </label>
+                                    <div class="form-group">
+                                        <p-dropdown (onChange)="changeDignidad()" [options]="dignidades"
+                                            formControlName="dignidad" placeholder="Selecciona la dignidad"
+                                            [filter]="true" filterBy="descripcion" [style]="{'width':'100%'}"
+                                            optionLabel="descripcion" [showClear]="true">
+                                        </p-dropdown>
+                                        <div *ngIf="validErrorForm('dignidad')">
+                                            <p class="text-danger">{{validTypeMsgForm('Dignidad','dignidad')}}</p>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <!-- <br>
+                        <div class="row" *ngIf="myForm.value.tipo_acta != 'ST' ">
+                            <div class="col-md">
+                                <div class="form-group">
+                                    <label class="fw-bold">Buscar por Lista </label>
+                                    <div class="form-group">
+                                        <p-dropdown [options]="listas" formControlName="lista" optionValue="lista"
+                                            placeholder="Selecciona la lista" [filter]="true" filterBy="lista"
+                                            [style]="{'width':'100%'}" optionLabel="lista" [showClear]="true">
+                                        </p-dropdown>
+                                
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div> -->
+                        <br>
+                        <div class="row">
+                            <div class="col-md">
+                                <div class="form-group">
+                                    <label class="fw-bold " for="">Provincia</label>
+                                    <div class="form-group">
+                                        <p-dropdown [options]="provincias" formControlName="provincia"
+                                            optionValue="codigo" (onChange)="getCantones()"
+                                            placeholder="Selecciona la provincia" [filter]="true" filterBy="nombre"
+                                            [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
+                                        </p-dropdown>
+                                        <div *ngIf="validErrorForm('provincia')">
+                                            <p class="text-danger">{{validTypeMsgForm('Provincia','provincia')}}</p>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-md">
+                                <div class="form-group">
+                                    <label class="fw-bold" for="">Cantón</label>
+                                    <div class="form-group">
+                                        <p-dropdown (onChange)="getParroquiaByCanton()" [options]="cantones"
+                                            formControlName="canton" optionValue="codigo"
+                                            placeholder="Selecciona el cantón" [filter]="true" filterBy="nombre"
+                                            [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
+                                        </p-dropdown>
+                                        <div *ngIf="validErrorForm('canton')">
+                                            <p class="text-danger">{{validTypeMsgForm('Cantón','canton')}}</p>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="col-md" *ngIf="myForm.value.tipo_acta  != 'ST' ">
+                            <div class="form-group">
+                                <label for="" class="fw-bold">Parroquia </label>
+                                <div class="form-group">
+                                    <p-dropdown [options]="parroquias" formControlName="parroquia" optionValue="codigo"
+                                        [filter]="true" filterBy="nombre" placeholder="Selecciona la parroquia"
+                                        [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
+                                    </p-dropdown>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-sm text-center ">
+
+                                <button (click)="buscarDetalles()" pButton type="button" label="Buscar"
+                                    icon="pi pi-search"
+                                    class="p-button-raised p-button-rounded p-button-info p-button-sm mt-2"></button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="row" *ngIf="myForm.value.tipo_acta != 'ST' ">
+                            <p-table #dt [value]="detalles"
+                                [totalRecords]="detalles && detalles.length? detalles.length: 0"
+                                styleClass="p-datatable-gridlines" [rows]="50" [paginator]="true" dataKey="id"
+                                [loading]="loadingTable" [rowHover]="true" class="mt-5"
+                                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
+                                [showCurrentPageReport]="true">
+
+                                <!-- <ng-template pTemplate="caption">
+                                    <div class="flex">
+
+                                        <button type="button" pButton pRipple icon="pi pi-file-excel"
+                                            (click)="exportExcel()" class="p-button-success mr-2" pTooltip="XLS"
+                                            tooltipPosition="bottom"></button>
+
+                                    </div>
+                                </ng-template> -->
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th style="width: 4rem; text-align: center">#</th>
+
+
+                                        <th style="width: 10rem; text-align: center">
+                                            Candidato / Partido
+
+                                        </th>
+                                        <th style="width: 4rem; text-align: center;max-width: 4rem;">
+                                            Lista
+
+                                        </th>
+                                        <th style="width: 8rem; text-align: center">
+                                            Votos
+
+                                        </th>
+                                        <th *ngIf="showDetail" style="width: 2rem; text-align: center"></th>
+
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-detalle let-i="rowIndex">
+                                    <tr>
+                                        <td style="text-align: center">{{i+1}}</td>
+                                        <td>{{ myForm.value.dignidad?.tipo == 'UNIPERSONAL'?
+                                            detalle.candidato.nombre_papeleta:detalle.candidato}}</td>
+                                        <td style="max-width: 1rem;">{{detalle.lista}}</td>
+                                        <td>{{detalle.voto}}</td>
+                                        <td *ngIf="showDetail">
+                                            <button title="Editar" icon="pi pi-eye" pButton type="button" label=""
+                                                (click)="showCandidatosPartidos(detalle)"
+                                                class="p-button-raised p-button-rounded p-button-info p-button-sm"></button>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center">No hay datos para digitar.</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+
+                        <div class="row" *ngIf="myForm.value.tipo_acta == 'ST' ">
+                            <p-table #dt [value]="totales" [totalRecords]="totales && totales.length? totales.length: 0"
+                                styleClass="p-datatable-gridlines" [rows]="10" [paginator]="true" dataKey="id"
+                                [loading]="loadingTable" [rowHover]="true" class="mt-5"
+                                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
+                                [showCurrentPageReport]="true">
+
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th style="width: 4rem; text-align: center">#</th>
+
+
+                                        <th style="width: 10rem; text-align: center">
+                                            Total votantes
+
+                                        </th>
+                                        <th style="width: 4rem; text-align: center;max-width: 4rem;">
+                                            Votos Válidos
+
+                                        </th>
+                                        <th style="width: 8rem; text-align: center">
+                                            Votos Blancos
+
+                                        </th>
+
+                                        <th style="width: 8rem; text-align: center">
+                                            Votos Nulos
+
+                                        </th>
+                                        <th style="width: 8rem; text-align: center">
+                                            Inasistentes
+                                        </th>
+
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-detalle let-i="rowIndex">
+                                    <tr>
+                                        <td style="text-align: center">{{i+1}}</td>
+                                        <td>{{detalle.total_votante}} </td>
+                                        <td>{{detalle.voto_valido}}</td>
+                                        <td>{{detalle.voto_blanco}}</td>
+                                        <td>{{detalle.voto_nulo}}</td>
+                                        <td>{{detalle.inasistente}}</td>
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="emptymessage">
+                                    <tr>
+                                        <td colspan="6" style="text-align: center">No hay datos para digitar.</td>
+                                    </tr>
+                                </ng-template>
+
+
+
+                            </p-table>
+                        </div>
+
+                    </p-fieldset>
+                </div>
+            </div>
+
+
+        </form>
+
+        <p-dialog header="Candidatos" [(visible)]="displayModal" [style]="{'width':'55vw', 'background-color':'purple'}"
+            styleClass="modalStyle" [draggable]="true" [resizable]="false" (onHide)="onHide()">
+
+            <div class="card-content">
+                <p-table #dt [value]="candidatosWebster" [totalRecords]="candidatosWebster && candidatosWebster.length? candidatosWebster.length: 0"
+                    styleClass="p-datatable-gridlines" [rows]="50" [paginator]="true" dataKey="id"
+                    [loading]="loadingTable" [rowHover]="true" class="mt-5"
+                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
+                    [showCurrentPageReport]="true">
+
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th style="width: 4rem; text-align: center">#</th>
+                            <th style="width: 10rem; text-align: center">
+                                Candidato
+
+                            </th>
+                            <th style="width: 4rem; text-align: center;max-width: 4rem;">
+                                Lista
+
+                            </th>
+                            <th style="width: 8rem; text-align: center">
+                                Votos
+
+                            </th>
+                            <th *ngIf="showDetail" style="width: 2rem; text-align: center"></th>
+
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-detalle let-i="rowIndex">
+                        <tr>
+                            <td style="text-align: center">{{i+1}}</td>
+                            <td>{{ detalle.nombre}}</td>
+                            <td style="max-width: 1rem;">{{detalle.lista}}</td>
+                            <td>{{detalle.voto}}</td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="5" style="text-align: center">No hay datos de candidatos</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+
+        </p-dialog>
+
+    </div>
+</div>
