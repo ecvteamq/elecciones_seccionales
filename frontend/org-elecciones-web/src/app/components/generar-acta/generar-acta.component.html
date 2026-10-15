@@ -38,7 +38,7 @@
                     <div class="form-group">
                         <label class="text-danger fw-bold" for="">Dignidad <label class="text-danger">*</label> </label>
                         <div class="form-group">
-                            <p-dropdown [options]="dignidades" formControlName="dignidad"
+                            <p-dropdown [options]="dignidades" formControlName="dignidad" (onChange)="getDistritos()"
                                 placeholder="Selecciona la dignidad" [filter]="true" filterBy="descripcion"
                                 [style]="{'width':'100%'}" optionLabel="descripcion" [showClear]="true">
                             </p-dropdown>
@@ -75,7 +75,7 @@
                         <label class="fw-bold text-danger" for="">Cantón <label class="text-danger">*</label> </label>
                         <div class="form-group">
                             <p-dropdown [options]="cantones" formControlName="canton" optionValue="codigo"
-                                (onChange)="getParroquiaByCanton()" placeholder="Selecciona el cantón" [filter]="true"
+                                (onChange)="getParroquiaByCanton(); getDistritos()" placeholder="Selecciona el cantón" [filter]="true"
                                 filterBy="nombre" [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
                             </p-dropdown>
                             <div *ngIf="validErrorForm('canton')">
@@ -90,7 +90,7 @@
                     <div class="form-group">
                         <label for="" class="fw-bold" >Parroquia </label>
                         <div class="form-group">
-                            <p-dropdown (onChange)="getRecintos()" [options]="parroquias" formControlName="parroquia"
+                            <p-dropdown (onChange)="getRecintos()" [options]="parroquiasDisponibles" formControlName="parroquia"
                                 optionValue="codigo" [filter]="true" filterBy="nombre"
                                 placeholder="Selecciona la parroquia" [style]="{'width':'100%'}" optionLabel="nombre"
                                 [showClear]="true">
@@ -139,7 +139,7 @@
                         </label>
                         <div class="form-group">
                             <!-- (onChange)="obtenerDatosRecinto()" -->
-                            <p-dropdown  [options]="recintos"
+                            <p-dropdown  [options]="recintosDisponibles"
                                 formControlName="recinto" [filter]="true" filterBy="nombre_recinto"
                                 placeholder="Selecciona el recinto" [style]="{'width':'100%'}"
                                 optionLabel="nombre_recinto" [showClear]="true" emptyMessage="No hay resultados">
@@ -151,6 +151,16 @@
 
                     </div>
 
+                </div>
+            </div>
+
+            <div class="row mb-2" *ngIf="myForm.value.tipo_acta  != 'ST' && distritos.length > 0">
+                <div class="col-sm">
+                    <span class="fw-bold">Distrito: </span>
+                    <span *ngIf="distritoActa">{{ distritoActa.nombre }}</span>
+                    <span *ngIf="!distritoActa" class="text-danger">
+                        seleccione la parroquia o el recinto para identificar el distrito
+                    </span>
                 </div>
             </div>
 

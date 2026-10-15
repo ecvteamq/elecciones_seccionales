@@ -20,6 +20,10 @@ Candidato.getAll = () => {
         'tipo',d.tipo,
         'estado',d.estado
     )as dignidad,
+		CASE WHEN dis.id IS NULL THEN NULL ELSE json_build_object(
+        'id', dis.id,
+        'nombre', dis.nombre
+    ) END as distrito,
 		c.lista,
 		c.nombre,
 		c.nombre_papeleta,
@@ -27,6 +31,7 @@ Candidato.getAll = () => {
         c.estado,c.id,c.parroquia
     from public.candidato c INNER JOIN public.provincia p on c.provincia = p.nombre 
     INNER JOIN public.canton cant on cant.nombre = c.canton INNER JOIN public.dignidad d on d.descripcion = c.dignidad
+    LEFT JOIN public.distrito dis on dis.id = c.distrito_id
     where c.estado = 'ACTIVO'
     ORDER BY C.ID DESC`;
     return db.manyOrNone(query);
@@ -57,13 +62,16 @@ Candidato.getCandidatoByFilters = (candidato) => {
     const query = `select split_part(lista,'-',1)::numeric as lista,nombre_papeleta from public.candidato 
         where provincia = $1 and canton = $2 
         and  (CASE WHEN $3 is not null then parroquia = $3 ELSE true END) 
-        and dignidad = $4 order by lista;
+        and dignidad = $4
+        and (CASE WHEN $5::bigint is not null then distrito_id = $5 ELSE true END)
+        order by lista;
         `;
     return db.manyOrNone(query, [
         candidato.provincia,
         candidato.canton,
         candidato.parroquia,
-        candidato.dignidad
+        candidato.dignidad,
+        candidato.distrito || null
     ]);
 };
 
@@ -71,13 +79,16 @@ Candidato.getCandidatoByFilters = (candidato) => {
 Candidato.getCandidatosMultipersonal = (candidato) => {
     const query = `select split_part(lista,'-',1)::numeric as lista,partido as nombre_papeleta  from candidato 
     where provincia = $1 and canton = $2 and  (CASE WHEN $3 is not null then parroquia = $3 ELSE true END) 
-    and dignidad = $4 group by split_part(lista,'-',1),partido order by lista`;
+    and dignidad = $4
+    and (CASE WHEN $5::bigint is not null then distrito_id = $5 ELSE true END)
+    group by split_part(lista,'-',1),partido order by lista`;
 
     return db.manyOrNone(query, [
         candidato.provincia,
         candidato.canton,
         candidato.parroquia,
-        candidato.dignidad
+        candidato.dignidad,
+        candidato.distrito || null
     ]);
 }
 
@@ -105,7 +116,8 @@ Candidato.create = (usuario) => {
               partido,
               nombre,
               nombre_papeleta,
-              estado
+              estado,
+              distrito_id
           )VALUES(
               $1,
               $2,
@@ -115,7 +127,8 @@ Candidato.create = (usuario) => {
               $6,
               $7,
               $8,
-              $9
+              $9,
+              $10
           )RETURNING id;`;
 
     return db.oneOrNone(sql, [
@@ -127,7 +140,8 @@ Candidato.create = (usuario) => {
         usuario.partido,
         usuario.nombre,
         usuario.nombre_papeleta,
-        usuario.estado
+        usuario.estado,
+        usuario.distrito || null
     ]);
 };
 
@@ -143,7 +157,8 @@ Candidato.update = (candidato) => {
         lista = $7,
         partido=$8,
         nombre_papeleta=$9,
-        estado=$10
+        estado=$10,
+        distrito_id=$11
       WHERE 
         id = $1
       `;
@@ -158,7 +173,8 @@ Candidato.update = (candidato) => {
         candidato.lista,
         candidato.partido,
         candidato.nombre_papeleta,
-        candidato.estado
+        candidato.estado,
+        candidato.distrito || null
     ]);
 };
 Candidato.delete = (candidato_id) => {
@@ -170,18 +186,21 @@ Candidato.delete = (candidato_id) => {
     ]);
 };
 
-Candidato.getCandidatosWebster = (candidato) => {
+Candidato.getCandidatosPartido = (candidato) => {
     const query = `select split_part(lista,'-',1)::numeric as lista,partido, nombre,orden  
     from candidato 
     where provincia = $1 and canton = $2 and  (CASE WHEN $3 is not null then parroquia = $3 ELSE true END) 
-    and dignidad = $4 and partido = $5`;
+    and dignidad = $4 and partido = $5
+    and (CASE WHEN $6::bigint is not null then distrito_id = $6 ELSE true END)
+    order by orden`;
 
     return db.manyOrNone(query, [
         candidato.provincia,
         candidato.canton,
         candidato.parroquia,
         candidato.dignidad,
-        candidato.partido
+        candidato.partido,
+        candidato.distrito || null
     ]);
 }
 

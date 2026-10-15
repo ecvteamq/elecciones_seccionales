@@ -16,7 +16,10 @@ usuario.getAll = () => {
     cant.nombre as canton_nombre,
     pro.nombre as provincia_nombre,
     parr.nombre as parroquia_nombre,
-    rec.nombre_recinto as recinto_nombre
+    rec.nombre as recinto_nombre,
+    cant.codigo as canton_codigo,
+    pro.codigo as provincia_codigo,
+    parr.codigo as parroquia_codigo
     FROM seguridad.usuario as U 
     INNER JOIN seguridad.usuario_rol as UR
     ON
@@ -33,7 +36,7 @@ usuario.getAll = () => {
     LEFT JOIN public.recinto_electoral rec
     on u.recinto_electoral = rec.id
     where U.estado = 'ACTIVO'
-    GROUP BY U.id,cant.nombre,pro.nombre,parr.nombre,rec.nombre_recinto
+    GROUP BY U.id,cant.nombre,pro.nombre,parr.nombre,rec.nombre,cant.codigo,pro.codigo,parr.codigo
     `;
   return db.manyOrNone(query);
 };
@@ -105,7 +108,8 @@ usuario.create = (usuario) => {
             numero_junta,
             contrasenia,
             fecha_ingreso,
-            estado
+            estado,
+            recinto_electoral
         )VALUES(
             $1,
             $2,
@@ -119,7 +123,8 @@ usuario.create = (usuario) => {
             $10,
             $11,
             $12,
-            $13
+            $13,
+            $14
         )RETURNING id;`;
 
   return db.oneOrNone(sql, [
@@ -136,6 +141,40 @@ usuario.create = (usuario) => {
     usuario.contrasenia,
     new Date(),
     usuario.estado,
+    usuario.recinto_electoral || null,
+  ]);
+};
+
+/** Actualiza los datos generales del usuario (la identificación y la contraseña no se modifican aquí). */
+usuario.update = (usuario) => {
+  const sql = `
+    UPDATE seguridad.usuario
+       SET nombre = $2,
+           apellido = $3,
+           telefono = $4,
+           direccion = $5,
+           genero = $6,
+           provincia = $7,
+           canton = $8,
+           parroquia = $9,
+           recinto_electoral = $10,
+           numero_junta = $11,
+           fecha_modificacion = $12
+     WHERE id = $1`;
+
+  return db.none(sql, [
+    usuario.id,
+    usuario.nombre,
+    usuario.apellido,
+    usuario.telefono,
+    usuario.direccion,
+    usuario.genero,
+    usuario.provincia,
+    usuario.canton,
+    usuario.parroquia,
+    usuario.recinto_electoral,
+    usuario.numero_junta,
+    new Date(),
   ]);
 };
 

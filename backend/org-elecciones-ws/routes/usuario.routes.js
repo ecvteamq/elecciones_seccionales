@@ -10,6 +10,7 @@ module.exports=(app)=>{
     app.get('/api/users/findById/:id',  userController.findById);
     app.get('/api/users/findDeliveryMen', userController.findDeliveryMen);
     app.post("/api/users/create",userController.create);
+    app.post("/api/users/createByAdmin",validateToken,userController.createByAdmin);
     app.post("/api/users/login",userController.login);
     app.post('/api/users/logout',userController.logout);
     app.post('/api/users/change-password',userController.changePassword)

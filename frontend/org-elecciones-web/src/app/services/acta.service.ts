@@ -74,9 +74,15 @@ export class ActaService {
         return this.http.post<Acta[]>(url, body, { headers });
     }
 
+    /** Reparte los votos del partido entre sus candidatos con el método activo en el backend (D'Hondt). */
+    calcularReparto(body) {
+        let url = this.api_url + '/api/actaDetalle/metodoReparto';
+        return this.http.post<any[]>(url, body);
+    }
+
     metodoWebster(body) {
         let url = this.api_url + '/api/actaDetalle/metodoWebster';
-        return this.http.post(url, body);
+        return this.http.post<any[]>(url, body);
     }
 
 

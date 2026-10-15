@@ -68,49 +68,6 @@ module.exports = {
             });
         }
     },
-    async metodoWebster(req, res, next) {
-        try {
-            const acta = req.body;
-            const provincia = await Provincia.findByCodigo(acta.provincia);
-            const canton = await Canton.findByCodigo(acta.canton, acta.provincia);
-            const parroquia = await Parroquia.findByCodigo(acta.parroquia, acta.provincia, acta.canton);
-
-            let body = {
-                "dignidad": acta.dignidad,
-                "provincia": JSON.parse(JSON.stringify(provincia)).nombre,
-                "canton": JSON.parse(JSON.stringify(canton)).nombre,
-                "parroquia": parroquia != null ? JSON.parse(JSON.stringify(parroquia)).nombre : null,
-                "partido": acta.partido
-            };
-            console.log("body:", body);
-
-            const dataCandidato = await Candidato.getCandidatosWebster(body);
-            const impares = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99];
-            let resultados = [];
-            for (let j = 0; j <= dataCandidato.length; j++) {
-                let resultado = Number(acta.votosPartido) / impares[j];
-                resultados.push(resultado);
-            }
-            for (const i in resultados) {
-                console.log("resultados:", resultados[i]);
-                for (const j in dataCandidato) {
-                    if (i == j) {
-                        dataCandidato[j].voto = parseFloat(resultados[i]).toFixed(2);
-                    }
-                    console.log("candidato:", dataCandidato[j].nombre);
-                    console.log("resultados:", resultados[i]);
-                }
-            }
-            return res.status(201).json(dataCandidato);
-        } catch (error) {
-            next(error);
-            console.log(`Error: ${error}`);
-            return res.status(501).json({
-                success: false,
-                message: "Error al generar e metodo webster",
-            });
-        }
-    },
     async getVotos(req, res, next) {
         try {
             const acta = req.body;

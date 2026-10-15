@@ -30,6 +30,13 @@ export class UsuarioService {
     return this.http.post(url, body);
   }
 
+  /** Creación desde la administración: el usuario queda activo con los roles indicados. */
+  createByAdmin(body) {
+    let url = this.api_url + '/api/users/createByAdmin';
+    let headers = new HttpHeaders({ 'Authorization': this.authService.getToken().token });
+    return this.http.post(url, body, { headers });
+  }
+
   reactivate(id) {
     let url = this.api_url + '/api/users/reactivate';
     let body = {

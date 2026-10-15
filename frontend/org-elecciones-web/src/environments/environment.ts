@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   secretKey: "O3VcOlj5Qf",
-  API_URL: "http://127.0.0.1:3000",
+  API_URL: "http://127.0.0.1:3001",
 };
 
 /*

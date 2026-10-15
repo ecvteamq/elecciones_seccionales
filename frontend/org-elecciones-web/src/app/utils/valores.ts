@@ -12,4 +12,12 @@ export class Valores{
     public static DIGNIDAD_CONCEJALES_URBANOS = 'CONCEJALES URBANOS';
     public static DIGNIDAD_CONCEJALES_RURALES = 'CONCEJALES RURALES';
     public static DIGNIDAD_VOCALES = 'VOCALES DE JUNTAS PARROQUIALES';
+    public static DIGNIDAD_CPCCS = 'INTEGRANTES DEL CPCCS';
+    /** Dignidades cuyo resultado se reparte entre los candidatos de cada partido (método D'Hondt). */
+    public static DIGNIDADES_CON_REPARTO = [
+        Valores.DIGNIDAD_CONCEJALES_URBANOS,
+        Valores.DIGNIDAD_CONCEJALES_RURALES,
+        Valores.DIGNIDAD_VOCALES,
+        Valores.DIGNIDAD_CPCCS
+    ];
 }

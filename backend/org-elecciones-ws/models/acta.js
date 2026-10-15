@@ -27,7 +27,7 @@ Acta.getAll = () => {
     )as dignidad,
     json_build_object(
       'id', r.id,
-      'nombre_recinto', r.nombre_recinto
+      'nombre_recinto', r.nombre
     )as recinto,
     a.numero_acta,
     a.id,

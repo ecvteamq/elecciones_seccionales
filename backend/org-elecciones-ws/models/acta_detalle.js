@@ -86,9 +86,13 @@ ActaDetalle.getVotos = (data) => {
     and (CASE WHEN length($3) > 0 then a.provincia = $3 ELSE true END)
     and (CASE WHEN length($4) > 0 then a.canton = $4 ELSE true END)
     and (CASE WHEN length($5) > 0 then a.parroquia = $5 ELSE true END)
+    and (CASE WHEN $6::bigint is not null then
+      COALESCE(a.parroquia, (select r.parroquia_id from public.recinto_electoral r where r.id = a.recinto_electoral))
+        in (select dp.parroquia_id from public.distrito_parroquia dp where dp.distrito_id = $6)
+      ELSE true END)
     group by c.nombre_papeleta,ad.lista,c.dignidad	
     ORDER BY voto desc`;
-  return db.manyOrNone(query, [data.dignidad.descripcion, data.lista,data.provincia,data.canton,data.parroquia]);
+  return db.manyOrNone(query, [data.dignidad.descripcion, data.lista,data.provincia,data.canton,data.parroquia,data.distrito || null]);
 };
 ActaDetalle.getVotosMultipersonal = (data) => {
     const query = `select 
@@ -104,9 +108,13 @@ ActaDetalle.getVotosMultipersonal = (data) => {
     and (CASE WHEN length($3) > 0 then a.provincia = $3 ELSE true END)
     and (CASE WHEN length($4) > 0 then a.canton = $4 ELSE true END)
     and (CASE WHEN length($5) > 0 then a.parroquia = $5 ELSE true END)
+    and (CASE WHEN $6::bigint is not null then
+      COALESCE(a.parroquia, (select r.parroquia_id from public.recinto_electoral r where r.id = a.recinto_electoral))
+        in (select dp.parroquia_id from public.distrito_parroquia dp where dp.distrito_id = $6)
+      ELSE true END)
     group by ad.partido,ad.lista	
     ORDER BY voto desc`;
-  return db.manyOrNone(query, [data.dignidad.descripcion, data.lista,data.provincia,data.canton,data.parroquia]);
+  return db.manyOrNone(query, [data.dignidad.descripcion, data.lista,data.provincia,data.canton,data.parroquia,data.distrito || null]);
 };
 ActaDetalle.updateDetalle = (actaDetalle) => {
   const sql = `

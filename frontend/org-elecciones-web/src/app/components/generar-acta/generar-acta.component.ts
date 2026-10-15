@@ -6,6 +6,7 @@ import { ActaDetalle } from 'src/app/models/acta_detalle.model';
 import { Candidato } from 'src/app/models/candidato.model';
 import { Canton } from 'src/app/models/canton.model';
 import { Dignidad } from 'src/app/models/dignidad.model';
+import { Distrito } from 'src/app/models/distrito.model';
 import { Parroquia } from 'src/app/models/parroquia.model';
 import { Provincia } from 'src/app/models/provincia.model';
 import { RecintoElectoral } from 'src/app/models/recinto_electoral.model';
@@ -14,12 +15,14 @@ import { AuthService } from 'src/app/services/auth.service';
 import { CandidatoService } from 'src/app/services/candidato.service';
 import { CantonService } from 'src/app/services/canton.service';
 import { DignidadService } from 'src/app/services/dignidad.service';
+import { DistritoService } from 'src/app/services/distrito.service';
 import { ParroquiaService } from 'src/app/services/parroquia.service';
 import { ProvinciaService } from 'src/app/services/provincia.service';
 import { RecintoElectoralService } from 'src/app/services/recinto_electoral.service';
 import { SweetalertConfig } from 'src/app/utils/sweet-alert-config';
 import { Validaciones } from 'src/app/utils/validaciones';
 import { Valores } from 'src/app/utils/valores';
+import { parroquiasDeDistritos } from 'src/app/utils/distritos';
 
 @Component({
   selector: 'app-generar-acta',
@@ -44,6 +47,8 @@ export class GenerarActaComponent implements OnInit {
   public actaDetalle: ActaDetalle[];
   public total_validos: number;
   public desbloqueoTotal: boolean = true;
+  /** Distritos del cantón para la dignidad seleccionada (vacío si el cantón no tiene distritos). */
+  public distritos: Distrito[] = [];
 
   constructor(
     private formBuilder: FormBuilder,
@@ -55,6 +60,7 @@ export class GenerarActaComponent implements OnInit {
     private candidatoService: CandidatoService,
     private recintoService: RecintoElectoralService,
     private actaService: ActaService,
+    private distritoService: DistritoService,
   ) {
     this.provincias = [];
     this.cantones = [];
@@ -202,6 +208,10 @@ export class GenerarActaComponent implements OnInit {
         return false;
       }
     }
+    if (this.distritos.length > 0 && !this.distritoActa) {
+      this.sweetAlert.showMessage('error', 'Seleccione la parroquia o el recinto para identificar el distrito');
+      return false;
+    }
     if (this.myForm.get('canton').value == Valores.COGIGO_IBARRA) {
       if (this.myForm.get('numero_junta').value == '') {
         this.sweetAlert.showMessage('error', 'Debe ingresar el numero de junta');
@@ -231,6 +241,61 @@ export class GenerarActaComponent implements OnInit {
     this.myForm.get('inasistentes').setValue(0);
   }
 
+  /** Carga los distritos del cantón para la dignidad seleccionada. */
+  getDistritos() {
+    const provincia = this.myForm.get('provincia').value;
+    const canton = this.myForm.get('canton').value;
+    const dignidad = this.myForm.get('dignidad').value;
+    if (!provincia || !canton || !dignidad?.id) {
+      this.distritos = [];
+      return;
+    }
+    this.distritoService.getByCanton(provincia, canton, dignidad.id).subscribe((data: Distrito[]) => {
+      this.distritos = data || [];
+      this.limpiarUbicacionInvalida();
+    }, err => {
+      this.distritos = [];
+      console.log("error:" + err.error?.message);
+    });
+  }
+
+  /** Parroquias que pertenecen a los distritos de la dignidad (todas si el cantón no tiene distritos). */
+  get parroquiasDisponibles(): Parroquia[] {
+    return parroquiasDeDistritos(this.parroquias, this.distritos);
+  }
+
+  /** Recintos de las parroquias disponibles. */
+  get recintosDisponibles(): RecintoElectoral[] {
+    if (this.distritos.length == 0) {
+      return this.recintos;
+    }
+    const codigos = this.parroquiasDisponibles.map(p => p.codigo);
+    return (this.recintos || []).filter(r => codigos.includes(r.parroquia?.codigo));
+  }
+
+  /** Quita parroquia y recinto que no correspondan a la dignidad (p. ej. rurales en concejales urbanos). */
+  private limpiarUbicacionInvalida() {
+    const parroquia = this.myForm.get('parroquia').value;
+    if (parroquia && !this.parroquiasDisponibles.some(p => p.codigo == parroquia)) {
+      this.myForm.get('parroquia').setValue('');
+    }
+    const recinto = this.myForm.get('recinto').value;
+    if (recinto && !this.recintosDisponibles.some(r => r.id == recinto.id)) {
+      this.myForm.get('recinto').setValue('');
+    }
+  }
+
+  /** Parroquia del acta: la elegida o, si no hay, la del recinto electoral. */
+  get parroquiaActa(): string {
+    return this.myForm.get('parroquia').value || this.myForm.get('recinto').value?.parroquia?.codigo || '';
+  }
+
+  /** Distrito al que pertenece el acta, deducido de su parroquia. */
+  get distritoActa(): Distrito {
+    const parroquia = this.parroquiaActa;
+    return parroquia ? this.distritos.find(d => d.parroquias.some(p => p.codigo == parroquia)) : undefined;
+  }
+
   buscarCandidatos() {
     this.limpiarTotales();
     if (this.validarCabecera()) {
@@ -238,7 +303,8 @@ export class GenerarActaComponent implements OnInit {
         provincia: this.myForm.get('provincia').value,
         canton: this.myForm.get('canton').value,
         parroquia: this.myForm.get('parroquia').value,
-        dignidad: this.myForm.get('dignidad').value
+        dignidad: this.myForm.get('dignidad').value,
+        distrito: this.distritoActa?.id ?? null
       }
       this.sweetAlert.showMessage('loading');
       this.candidatoService.getByFilter(body).subscribe((data: Candidato[]) => {
@@ -340,7 +406,7 @@ export class GenerarActaComponent implements OnInit {
         let body = {
           "provincia": this.myForm.get('provincia').value,
           "canton": this.myForm.get('canton').value,
-          "parroquia": this.myForm.get('parroquia').value,
+          "parroquia": this.parroquiaActa,
           "recinto_electoral": this.myForm.get('recinto').value,
           "numero_junta": this.myForm.get('numero_junta').value,
           "genero": this.myForm.get('genero').value,

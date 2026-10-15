@@ -30,6 +30,7 @@ export class RecintoElectoralComponent implements OnInit {
   keyConfirmPopup: string;
   public primaryColor: string;
   matchModeOptions: SelectItem[];
+  opcionesFiltro: { provincia: SelectItem[], canton: SelectItem[], parroquia: SelectItem[] } = { provincia: [], canton: [], parroquia: [] };
 
   constructor(
     public formBuilder: FormBuilder,
@@ -67,11 +68,24 @@ export class RecintoElectoralComponent implements OnInit {
     });
   }
 
+  /** Valores distintos de cada columna para los combos de filtro de la tabla. */
+  private cargarOpcionesFiltro() {
+    const distintos = (valores: string[]) => [...new Set(valores.filter(v => !!v))].sort()
+      .map(v => ({ label: v, value: v }));
+    const recintos = this.recintos || [];
+    this.opcionesFiltro = {
+      provincia: distintos(recintos.map(r => r.nombre_provincia)),
+      canton: distintos(recintos.map(r => r.nombre_canton)),
+      parroquia: distintos(recintos.map(r => r.nombre_parroquia))
+    };
+  }
+
   onCallRecintos() {
     this.loadingTable = true;
     this.recintoService.getAll().subscribe({
       next: (recintos: RecintoElectoral[]) => {
         this.recintos = recintos;
+        this.cargarOpcionesFiltro();
       },
       complete: () => {
         this.loadingTable = false;

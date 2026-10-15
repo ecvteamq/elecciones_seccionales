@@ -9,19 +9,8 @@ import { CandidatoService } from 'src/app/services/candidato.service';
 import { DignidadService } from 'src/app/services/dignidad.service';
 import { SweetalertConfig } from 'src/app/utils/sweet-alert-config';
 import FileSaver from 'file-saver';
-// import * as jsPDF from 'jspdf'; 
-// import * as autoTable from 'jspdf-autotable';
-// import { jsPDF } from 'jspdf';
-// import 'jspdf-autotable';
-// import { UserOptions } from 'jspdf-autotable';
-
-// interface jsPDFCustom extends jsPDF {
-//   autoTable: (options: UserOptions) => void;
-// }
-
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-import { UserOptions } from 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { Provincia } from 'src/app/models/provincia.model';
 import { Canton } from 'src/app/models/canton.model';
 import { ProvinciaService } from 'src/app/services/provincia.service';
@@ -30,13 +19,9 @@ import { Validaciones } from 'src/app/utils/validaciones';
 import { Valores } from 'src/app/utils/valores';
 import { Parroquia } from 'src/app/models/parroquia.model';
 import { ParroquiaService } from 'src/app/services/parroquia.service';
-
-interface jsPDFCustom extends jsPDF {
-  autoTable: (options: UserOptions) => void;
-}
-
-const doc = new jsPDF() as jsPDFCustom;
-
+import { Distrito } from 'src/app/models/distrito.model';
+import { DistritoService } from 'src/app/services/distrito.service';
+import { parroquiasDeDistritos } from 'src/app/utils/distritos';
 
 @Component({
   selector: 'app-reportes',
@@ -59,10 +44,15 @@ export class ReportesComponent implements OnInit {
   exportColumns: any[];
   public vl: Validaciones;
   public parroquias: Parroquia[];
+  public distritos: Distrito[] = [];
   showDetail: boolean = false;
   public displayModal: Boolean;
   editMod: Boolean;
-  candidatosWebster:any[];
+  candidatosReparto: any[];
+  partidoReparto: string;
+  /** Filtros con los que se obtuvieron los resultados de la tabla (no los que el usuario esté editando). */
+  filtrosBusqueda: any = null;
+  loadingReparto: boolean;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -71,7 +61,8 @@ export class ReportesComponent implements OnInit {
     private actaService: ActaService,
     private provinciaService: ProvinciaService,
     private cantonService: CantonService,
-    private parroquiaService: ParroquiaService
+    private parroquiaService: ParroquiaService,
+    private distritoService: DistritoService
   ) {
     this.actas = [];
     this.detalles = [];
@@ -84,7 +75,7 @@ export class ReportesComponent implements OnInit {
       { field: 'quantity', header: 'Quantity' }
     ];
     this.exportColumns = this.cols.map(col => ({ title: col.header, dataKey: col.field }));
-    this.candidatosWebster = [];
+    this.candidatosReparto = [];
   }
 
   ngOnInit(): void {
@@ -103,6 +94,7 @@ export class ReportesComponent implements OnInit {
       tipo_acta: [''],
       provincia: [''],
       canton: [''],
+      distrito: [null],
       parroquia: ['']
     });
     this.myForm.get('tipo_acta').setValue('G');
@@ -125,8 +117,45 @@ export class ReportesComponent implements OnInit {
     });
   }
 
+  /** Distritos (circunscripciones) del cantón para la dignidad seleccionada. */
+  getDistritos() {
+    const provincia = this.myForm.get('provincia').value;
+    const canton = this.myForm.get('canton').value;
+    const dignidad = this.myForm.get('dignidad').value;
+    this.myForm.get('distrito').setValue(null);
+    if (!provincia || !canton || !dignidad) {
+      this.distritos = [];
+      return;
+    }
+    this.distritoService.getByCanton(provincia, canton, dignidad.id).subscribe((data: Distrito[]) => {
+      this.distritos = data || [];
+      this.changeDistrito();
+    }, err => {
+      this.distritos = [];
+      console.log("error:" + err.error?.message);
+    });
+  }
+
+  private get distritoSeleccionado(): Distrito {
+    return this.distritos.find(d => d.id == this.myForm.get('distrito').value);
+  }
+
+  /** Parroquias de los distritos de la dignidad; si hay un distrito seleccionado, solo las de ese distrito. */
+  get parroquiasFiltradas(): Parroquia[] {
+    return parroquiasDeDistritos(this.parroquias, this.distritos, this.myForm.get('distrito').value);
+  }
+
+  changeDistrito() {
+    // La parroquia elegida puede no pertenecer al nuevo distrito
+    const parroquia = this.myForm.get('parroquia').value;
+    if (parroquia && !this.parroquiasFiltradas.some(p => p.codigo == parroquia)) {
+      this.myForm.get('parroquia').setValue('');
+    }
+  }
+
   getParroquiaByCanton() {
     console.log("get parroquia by canton");
+    this.getDistritos();
     this.parroquiaService.getByCantonAndProvincia(this.myForm.get('canton').value, this.myForm.get('provincia').value).subscribe((data: Parroquia[]) => {
       this.parroquias = data;
     }, err => {
@@ -137,25 +166,36 @@ export class ReportesComponent implements OnInit {
 
 
 
+  /** Descripción de la dignidad seleccionada (vacío si se limpió el dropdown). */
+  private get dignidadSeleccionada(): string {
+    return this.myForm.get('dignidad').value?.descripcion ?? '';
+  }
+
+  /** Dignidades pluripersonales cuyo resultado se reparte entre candidatos (D'Hondt). */
+  private requiereReparto(): boolean {
+    return Valores.DIGNIDADES_CON_REPARTO.includes(this.dignidadSeleccionada);
+  }
+
+  private requiereParroquia(): boolean {
+    return this.dignidadSeleccionada == Valores.DIGNIDAD_VOCALES;
+  }
+
+  private setRequerido(campo: string, requerido: boolean) {
+    const control = this.myForm.get(campo);
+    requerido ? control.setValidators([Validators.required]) : control.clearValidators();
+    control.updateValueAndValidity();
+  }
+
   changeDignidad() {
-    console.log("dignidad:", this.myForm.get('dignidad').value.descripcion);
-    if (this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_ALCALDE || this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_PREFECTO) {
-      this.myForm.get('canton').clearValidators();
-      this.myForm.get('provincia').clearValidators();
-      this.myForm.get('parroquia').clearValidators();
-      this.showDetail = false;
-    } else if (this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_CONCEJALES_RURALES || this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_CONCEJALES_URBANOS) {
-      this.myForm.get('canton').setValidators([Validators.required]);
-      this.myForm.get('provincia').setValidators([Validators.required]);
-      this.myForm.invalid;
-      this.showDetail = true;
-    } else if (this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_VOCALES) {
-      this.myForm.get('canton').setValidators([Validators.required]);
-      this.myForm.get('provincia').setValidators([Validators.required]);
-      this.myForm.get('parroquia').setValidators([Validators.required]);
-      this.myForm.invalid;
-      this.showDetail = true;
-    }
+    const requiereUbicacion = this.requiereReparto();
+    this.setRequerido('provincia', requiereUbicacion);
+    this.setRequerido('canton', requiereUbicacion);
+    this.setRequerido('parroquia', this.requiereParroquia());
+    this.showDetail = requiereUbicacion;
+    // Los resultados anteriores son de otra dignidad: tienen otra forma y no admiten reparto
+    this.detalles = [];
+    this.filtrosBusqueda = null;
+    this.getDistritos();
   }
 
   changeTipoActa() {
@@ -216,25 +256,21 @@ export class ReportesComponent implements OnInit {
   }
 
   validarReporte(): boolean {
-    if (this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_CONCEJALES_RURALES || this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_CONCEJALES_URBANOS) {
-      if (this.myForm.get('provincia').value == '') {
+    if (!this.dignidadSeleccionada) {
+      this.sweetAlert.showMessage('error', 'Debe seleccionar la dignidad');
+      return false;
+    }
+    if (this.requiereReparto()) {
+      // Los dropdowns con showClear dejan el valor en null al limpiarse
+      if (!this.myForm.get('provincia').value) {
         this.sweetAlert.showMessage('error', 'Debe ingresar la provincia');
         return false;
       }
-      if (this.myForm.get('canton').value == '') {
+      if (!this.myForm.get('canton').value) {
         this.sweetAlert.showMessage('error', 'Debe ingresar el cantón');
         return false;
       }
-    } else if (this.myForm.get('dignidad').value.descripcion == Valores.DIGNIDAD_VOCALES) {
-      if (this.myForm.get('provincia').value == '') {
-        this.sweetAlert.showMessage('error', 'Debe ingresar la provincia');
-        return false;
-      }
-      if (this.myForm.get('canton').value == '') {
-        this.sweetAlert.showMessage('error', 'Debe ingresar el cantón');
-        return false;
-      }
-      if (this.myForm.get('parroquia').value == '') {
+      if (this.requiereParroquia() && !this.myForm.get('parroquia').value) {
         this.sweetAlert.showMessage('error', 'Debe ingresar la parroquia');
         return false;
       }
@@ -242,21 +278,39 @@ export class ReportesComponent implements OnInit {
     return true;
   }
 
+  /** Nombre a mostrar: objeto candidato (unipersonales) o nombre del partido (pluripersonales). */
+  nombreResultado(detalle: any): string {
+    return detalle?.candidato && typeof detalle.candidato == 'object'
+      ? detalle.candidato.nombre_papeleta
+      : detalle?.candidato;
+  }
+
   showCandidatosPartidos(detalle) {
-    console.log("detalle:",detalle);
+    // El reparto se calcula con los mismos filtros con los que se obtuvieron los votos del partido
+    const filtros = this.filtrosBusqueda || this.myForm.value;
     let body = {
-      "provincia":this.myForm.get('provincia').value,
-      "canton":this.myForm.get('canton').value,
-      "parroquia":this.myForm.get('parroquia').value,
+      "provincia":filtros.provincia,
+      "canton":filtros.canton,
+      "parroquia":filtros.parroquia,
+      "distrito":filtros.distrito,
       "partido":detalle.candidato,
       "votosPartido":detalle.voto,
-      "dignidad":this.myForm.get('dignidad').value.descripcion
+      "dignidad":filtros.dignidad?.descripcion
     }
-    this.actaService.metodoWebster(body).subscribe((data:any[])=>{
-      if(data){
-        console.log("data webster:",data);
-        this.candidatosWebster = data;
-      }
+    if (!body.provincia || !body.canton) {
+      this.sweetAlert.showMessage('error', 'Seleccione la provincia y el cantón y vuelva a buscar');
+      return;
+    }
+    // Evita mostrar los candidatos del partido consultado anteriormente
+    this.candidatosReparto = [];
+    this.partidoReparto = detalle.candidato;
+    this.loadingReparto = true;
+    this.actaService.calcularReparto(body).subscribe((data: any[]) => {
+      this.candidatosReparto = data || [];
+      this.loadingReparto = false;
+    }, err => {
+      this.loadingReparto = false;
+      this.sweetAlert.showMessage('error', err?.error?.message || 'No se pudo calcular el reparto de votos');
     });
     this.displayModal = true;
     this.editMod = true;
@@ -266,14 +320,13 @@ export class ReportesComponent implements OnInit {
     if (this.myForm.get('tipo_acta').value != 'ST') {
       if (this.validarReporte()) {
         this.sweetAlert.showMessage('loading');
-        this.actaService.getVotos(this.myForm.value).subscribe((result: ActaDetalle[]) => {
-          console.log("result reporte:", result);
-          if (result) {
-            this.sweetAlert.showMessage('close');
-            this.detalles = result;
-          }
+        const filtros = { ...this.myForm.value };
+        this.actaService.getVotos(filtros).subscribe((result: ActaDetalle[]) => {
+          this.sweetAlert.showMessage('close');
+          this.detalles = result || [];
+          this.filtrosBusqueda = filtros;
         }, err => {
-          console.log("error:" + err.error.message);
+          this.sweetAlert.showMessage('error', err?.error?.message || 'No se pudieron obtener los resultados');
         });
       }
     } else {
@@ -311,24 +364,72 @@ export class ReportesComponent implements OnInit {
     );
   }
 
-  // exportPdf() {
-  //   // import("jspdf").then(jsPDF => {
-  //   //     import("jspdf-autotable").then(x => {
-  //   //         const doc = new jsPDF.default(0,0);
-  //   //         doc.autoTable(this.exportColumns, this.products);
-  //   //         doc.save('products.pdf');
-  //   //     })
-  //   // })
-  //   doc.autoTable(this.exportColumns, this.detalles);
-  //   doc.save('products.pdf');
-  //   doc.autoTable({
-  //     columns:this.exportColumns,
-  //     body:[
-  //       this.detalles
-  //     ]
-  //   });
-  //   doc.save("table.pdf");
-  // }
+  /** Filtros aplicados al reporte, para la cabecera del PDF. */
+  private filtrosReporte(): string[] {
+    const nombre = (lista: any[], codigo: string) => (lista || []).find(item => item.codigo == codigo)?.nombre;
+    const busqueda = this.filtrosBusqueda || this.myForm.value;
+    const filtros = [`Dignidad: ${busqueda.dignidad?.descripcion ?? ''}`];
+    const provincia = nombre(this.provincias, busqueda.provincia);
+    const canton = nombre(this.cantones, busqueda.canton);
+    const distrito = this.distritos.find(d => d.id == busqueda.distrito);
+    const parroquia = nombre(this.parroquias, busqueda.parroquia);
+    if (provincia) filtros.push(`Provincia: ${provincia}`);
+    if (canton) filtros.push(`Cantón: ${canton}`);
+    if (distrito) filtros.push(`Distrito: ${distrito.nombre}`);
+    if (parroquia) filtros.push(`Parroquia: ${parroquia}`);
+    return filtros;
+  }
+
+  private generarPdf(titulo: string, subtitulos: string[], head: string[], body: any[][], archivo: string) {
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text(titulo, 14, 16);
+    doc.setFontSize(10);
+    subtitulos.forEach((linea, i) => doc.text(linea, 14, 24 + i * 5));
+    autoTable(doc, {
+      startY: 26 + subtitulos.length * 5,
+      head: [head],
+      body,
+      headStyles: { fillColor: Valores.primaryColor },
+      styles: { fontSize: 9 },
+    });
+    doc.save(`${archivo}_${new Date().getTime()}.pdf`);
+  }
+
+  private fechaGeneracion(): string {
+    return `Fecha de generación: ${new Date().toLocaleString('es-EC')}`;
+  }
+
+  /** Exporta a PDF los resultados mostrados en la tabla del reporte. */
+  exportPdf() {
+    if (!this.detalles || this.detalles.length == 0) {
+      this.sweetAlert.showMessage('error', 'No hay resultados para exportar');
+      return;
+    }
+    const unipersonal = (this.filtrosBusqueda || this.myForm.value).dignidad?.tipo == 'UNIPERSONAL';
+    const body: any[][] = this.detalles.map((detalle: any, i) => [
+      i + 1,
+      this.nombreResultado(detalle),
+      detalle.lista,
+      Number(detalle.voto).toLocaleString('es-EC')
+    ]);
+    const total = this.detalles.reduce((suma, detalle: any) => suma + Number(detalle.voto || 0), 0);
+    body.push(['', 'TOTAL', '', total.toLocaleString('es-EC')]);
+    this.generarPdf('Reporte de resultados', [...this.filtrosReporte(), this.fechaGeneracion()],
+      ['#', unipersonal ? 'Candidato' : 'Partido', 'Lista', 'Votos'], body, 'reporte_resultados');
+  }
+
+  /** Exporta a PDF el reparto de votos entre los candidatos del partido consultado. */
+  exportPdfReparto() {
+    if (!this.candidatosReparto || this.candidatosReparto.length == 0) {
+      this.sweetAlert.showMessage('error', 'No hay candidatos para exportar');
+      return;
+    }
+    const body = this.candidatosReparto.map((candidato, i) => [i + 1, candidato.nombre, candidato.lista, candidato.voto]);
+    this.generarPdf('Reparto de votos por candidato',
+      [...this.filtrosReporte(), `Partido: ${this.partidoReparto}`, this.fechaGeneracion()],
+      ['#', 'Candidato', 'Lista', 'Votos'], body, 'reparto_candidatos');
+  }
 
   validErrorForm(campo) {
     return this.vl.validErrorForm(campo, this.myForm);
