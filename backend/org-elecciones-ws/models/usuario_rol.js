@@ -10,7 +10,7 @@ UsuarioRol.getAll = () => {
 };
 
 UsuarioRol.getById = (id) => {
-    const query = "select *from seguridad.usuario_rol where usuario_id = $1 ";
+    const query = "select *from seguridad.usuario_rol where usuario = $1 ";
     return db.manyOrNone(query, id);
 };
 

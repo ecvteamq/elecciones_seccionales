@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ConfirmationService, SelectItem } from 'primeng/api';
 import { Dignidad } from 'src/app/models/dignidad.model';
-import { RecintoElectoral } from 'src/app/models/recinto_electoral.model';
 import { Rol } from 'src/app/models/rol.model';
 import { Usuario } from 'src/app/models/usuario.model';
 import { DignidadService } from 'src/app/services/dignidad.service';
@@ -142,7 +141,7 @@ export class DignidadComponent implements OnInit {
     }
   }
 
-  edit(recinto: RecintoElectoral) {
+  edit(recinto: Dignidad) {
     console.log("recinto:", recinto);
     this.myForm.patchValue(recinto);
     this.indexRecintoSelected = this.dignidades.findIndex(item => item.id == recinto.id);

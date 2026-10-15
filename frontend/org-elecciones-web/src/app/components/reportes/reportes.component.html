@@ -102,11 +102,26 @@
                             </div>
                         </div>
                         <br>
+                        <div class="row" *ngIf="distritos.length > 0">
+                            <div class="col-md">
+                                <div class="form-group">
+                                    <label class="fw-bold" for="">Distrito</label>
+                                    <div class="form-group">
+                                        <p-dropdown (onChange)="changeDistrito()" [options]="distritos"
+                                            formControlName="distrito" optionValue="id" optionLabel="nombre"
+                                            placeholder="Todos los distritos" [style]="{'width':'100%'}"
+                                            [showClear]="true">
+                                        </p-dropdown>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br *ngIf="distritos.length > 0">
                         <div class="col-md" *ngIf="myForm.value.tipo_acta  != 'ST' ">
                             <div class="form-group">
                                 <label for="" class="fw-bold">Parroquia </label>
                                 <div class="form-group">
-                                    <p-dropdown [options]="parroquias" formControlName="parroquia" optionValue="codigo"
+                                    <p-dropdown [options]="parroquiasFiltradas" formControlName="parroquia" optionValue="codigo"
                                         [filter]="true" filterBy="nombre" placeholder="Selecciona la parroquia"
                                         [style]="{'width':'100%'}" optionLabel="nombre" [showClear]="true">
                                     </p-dropdown>
@@ -122,6 +137,11 @@
                                 <button (click)="buscarDetalles()" pButton type="button" label="Buscar"
                                     icon="pi pi-search"
                                     class="p-button-raised p-button-rounded p-button-info p-button-sm mt-2"></button>
+
+                                <button *ngIf="myForm.value.tipo_acta != 'ST'" (click)="exportPdf()" pButton
+                                    type="button" label="Exportar PDF" icon="pi pi-file-pdf"
+                                    [disabled]="!detalles || detalles.length == 0"
+                                    class="p-button-raised p-button-rounded p-button-danger p-button-sm mt-2 ms-2"></button>
 
                             </div>
 
@@ -169,8 +189,7 @@
                                 <ng-template pTemplate="body" let-detalle let-i="rowIndex">
                                     <tr>
                                         <td style="text-align: center">{{i+1}}</td>
-                                        <td>{{ myForm.value.dignidad?.tipo == 'UNIPERSONAL'?
-                                            detalle.candidato.nombre_papeleta:detalle.candidato}}</td>
+                                        <td>{{ nombreResultado(detalle) }}</td>
                                         <td style="max-width: 1rem;">{{detalle.lista}}</td>
                                         <td>{{detalle.voto}}</td>
                                         <td *ngIf="showDetail">
@@ -255,9 +274,14 @@
             styleClass="modalStyle" [draggable]="true" [resizable]="false" (onHide)="onHide()">
 
             <div class="card-content">
-                <p-table #dt [value]="candidatosWebster" [totalRecords]="candidatosWebster && candidatosWebster.length? candidatosWebster.length: 0"
+                <div style="text-align: right;">
+                    <button (click)="exportPdfReparto()" pButton type="button" label="Exportar PDF"
+                        icon="pi pi-file-pdf" [disabled]="loadingReparto || !candidatosReparto?.length"
+                        class="p-button-raised p-button-rounded p-button-danger p-button-sm"></button>
+                </div>
+                <p-table #dt [value]="candidatosReparto" [totalRecords]="candidatosReparto && candidatosReparto.length? candidatosReparto.length: 0"
                     styleClass="p-datatable-gridlines" [rows]="50" [paginator]="true" dataKey="id"
-                    [loading]="loadingTable" [rowHover]="true" class="mt-5"
+                    [loading]="loadingReparto" [rowHover]="true" class="mt-5"
                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} items"
                     [showCurrentPageReport]="true">
 

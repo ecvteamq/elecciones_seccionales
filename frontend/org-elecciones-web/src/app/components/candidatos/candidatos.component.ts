@@ -4,15 +4,18 @@ import { ConfirmationService, SelectItem } from 'primeng/api';
 import { Candidato } from 'src/app/models/candidato.model';
 import { Canton } from 'src/app/models/canton.model';
 import { Dignidad } from 'src/app/models/dignidad.model';
+import { Distrito } from 'src/app/models/distrito.model';
 import { Parroquia } from 'src/app/models/parroquia.model';
 import { Provincia } from 'src/app/models/provincia.model';
 import { CandidatoService } from 'src/app/services/candidato.service';
 import { CantonService } from 'src/app/services/canton.service';
 import { DignidadService } from 'src/app/services/dignidad.service';
+import { DistritoService } from 'src/app/services/distrito.service';
 import { ParroquiaService } from 'src/app/services/parroquia.service';
 import { ProvinciaService } from 'src/app/services/provincia.service';
 import { SweetalertConfig } from 'src/app/utils/sweet-alert-config';
 import { Validaciones } from 'src/app/utils/validaciones';
+import { parroquiasDeDistritos } from 'src/app/utils/distritos';
 
 @Component({
   selector: 'app-candidatos',
@@ -35,6 +38,8 @@ export class CandidatosComponent implements OnInit {
   provincias: Provincia[];
   cantones: Canton[];
   parroquias: Parroquia[];
+  distritos: Distrito[];
+  opcionesFiltro: { provincia: SelectItem[], canton: SelectItem[], parroquia: SelectItem[], distrito: SelectItem[] } = { provincia: [], canton: [], parroquia: [], distrito: [] };
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -43,11 +48,13 @@ export class CandidatosComponent implements OnInit {
     private provinciaService: ProvinciaService,
     private formBuilder: FormBuilder,
     private parroquiaService: ParroquiaService,
-    private cantonService: CantonService
+    private cantonService: CantonService,
+    private distritoService: DistritoService
   ) {
     this.provincias = [];
     this.cantones = [];
     this.parroquias = [];
+    this.distritos = [];
     this.dignidades = [];
     this.vl = new Validaciones();
     this.sweetAlert = new SweetalertConfig();
@@ -66,6 +73,7 @@ export class CandidatosComponent implements OnInit {
       provincia: ['', [Validators.required]],
       canton: ['', [Validators.required]],
       parroquia: ['',],
+      distrito: [null],
       nombre: ['', [Validators.required]],
       nombre_papeleta: ['', [Validators.required]],
       lista: ['', [Validators.required]],
@@ -88,6 +96,7 @@ export class CandidatosComponent implements OnInit {
     this.candidatoService.getAll().subscribe({
       next: (data: Candidato[]) => {
         this.candidatos = data;
+        this.cargarOpcionesFiltro();
       },
       complete: () => {
         this.loadingTable = false;
@@ -97,6 +106,19 @@ export class CandidatosComponent implements OnInit {
         console.log("error:", err);
       }
     });
+  }
+
+  /** Valores distintos de cada columna para los combos de filtro de la tabla. */
+  private cargarOpcionesFiltro() {
+    const distintos = (valores: string[]) => [...new Set(valores.filter(v => !!v))].sort()
+      .map(v => ({ label: v, value: v }));
+    const candidatos: any[] = this.candidatos || [];
+    this.opcionesFiltro = {
+      provincia: distintos(candidatos.map(c => c.provincia?.nombre)),
+      canton: distintos(candidatos.map(c => c.canton?.nombre)),
+      parroquia: distintos(candidatos.map(c => c.parroquia)),
+      distrito: distintos(candidatos.map(c => c.distrito?.nombre))
+    };
   }
 
   getDignidades() {
@@ -163,7 +185,8 @@ export class CandidatosComponent implements OnInit {
       "lista": candidato.lista,
       "nombre_papeleta": candidato.nombre_papeleta,
       "partido": candidato.partido,
-      "id": candidato.id
+      "id": candidato.id,
+      "distrito": candidato.distrito?.id ?? null
     });
     this.getCantones();
     this.myForm.get('canton').setValue(candidato.canton?.codigo);
@@ -176,6 +199,7 @@ export class CandidatosComponent implements OnInit {
     this.parroquiaService.findByNombre(body).subscribe((data:any) => {
       console.log("data parroquia:", data);
       this.myForm.get('parroquia').setValue(data.parroquia.codigo);
+      this.sincronizarDistrito();
     });
     this.indexCandidatosSelected = this.candidatos.findIndex(item => item.id == candidato.id);
     this.displayModal = true;
@@ -236,7 +260,69 @@ export class CandidatosComponent implements OnInit {
     });
   }
 
+  /**
+   * Los concejales se eligen por distrito: carga los distritos del cantón para la dignidad
+   * seleccionada. Si no hay distritos configurados, el candidato no se asocia a ninguno.
+   */
+  getDistritos(distritoSeleccionado?: number) {
+    const provincia = this.myForm.get('provincia').value;
+    const canton = this.myForm.get('canton').value;
+    const dignidad = this.dignidades.find(d => d.descripcion == this.myForm.get('dignidad').value);
+    if (!provincia || !canton || !dignidad) {
+      this.distritos = [];
+      this.myForm.get('distrito').setValue(null);
+      return;
+    }
+    this.distritoService.getByCanton(provincia, canton, dignidad.id).subscribe((data: Distrito[]) => {
+      this.distritos = data;
+      const existe = data.some(d => d.id == distritoSeleccionado);
+      this.myForm.get('distrito').setValue(existe ? distritoSeleccionado : null);
+      this.limpiarParroquiaInvalida();
+      this.sincronizarDistrito();
+    }, err => {
+      console.log("error:" + err.error?.message);
+    });
+  }
+
+  /** Distrito al que pertenece la parroquia elegida (si la parroquia está en alguno). */
+  get distritoDeParroquia(): Distrito {
+    const parroquia = this.myForm.get('parroquia').value;
+    return parroquia ? this.distritos.find(d => d.parroquias.some(p => p.codigo == parroquia)) : undefined;
+  }
+
+  /** Parroquias que pertenecen a los distritos de la dignidad (o al distrito elegido). */
+  get parroquiasDisponibles(): Parroquia[] {
+    return parroquiasDeDistritos(this.parroquias, this.distritos, this.myForm.get('distrito').value);
+  }
+
+  /** Quita la parroquia si no pertenece a los distritos de la dignidad (p. ej. rural en concejales urbanos). */
+  limpiarParroquiaInvalida() {
+    const parroquia = this.myForm.get('parroquia').value;
+    if (parroquia && !this.parroquiasDisponibles.some(p => p.codigo == parroquia)) {
+      this.myForm.get('parroquia').setValue('');
+    }
+  }
+
+  /** Si hay parroquia, solo se ofrece su distrito; si no, todos los del cantón. */
+  get distritosDisponibles(): Distrito[] {
+    const distrito = this.distritoDeParroquia;
+    return distrito ? [distrito] : this.distritos;
+  }
+
+  /** La parroquia determina el distrito: se asigna solo y no puede contradecirla. */
+  sincronizarDistrito() {
+    const distrito = this.distritoDeParroquia;
+    if (distrito) {
+      this.myForm.get('distrito').setValue(distrito.id);
+    }
+  }
+
+  nombresParroquias(distrito: Distrito): string {
+    return (distrito.parroquias || []).map(p => p.nombre).join(', ');
+  }
+
   getParroquiaByCanton() {
+    this.getDistritos(this.myForm.get('distrito').value);
     if (this.myForm.get('canton').value != "") {
       this.parroquiaService.getByCantonAndProvincia(this.myForm.get('canton').value, this.myForm.get('provincia').value).subscribe((data: Parroquia[]) => {
         this.parroquias = data;
@@ -249,6 +335,7 @@ export class CandidatosComponent implements OnInit {
 
   onHide() {
     this.myForm.reset();
+    this.distritos = [];
     this.editMod = false;
     this.indexCandidatosSelected = null;
   }

@@ -3,6 +3,44 @@ const Provincia = require("../models/provincia");
 const Canton = require("../models/canton");
 const Parroquia = require("../models/parroquia");
 const Dignidad = require("../models/dignidad");
+const db = require("../config/db.config");
+const { crearDistritoRepository } = require("../repositories/distrito.repository");
+
+const distritoRepository = crearDistritoRepository(db);
+
+/**
+ * La parroquia determina el distrito: si la parroquia pertenece a un distrito de la dignidad,
+ * se asigna ese distrito y se rechaza uno distinto. Devuelve un mensaje de error o null.
+ */
+async function validarDistrito(candidato) {
+  if (!candidato.parroquia || !candidato.dignidad) {
+    return null;
+  }
+  const dignidad = await Dignidad.findByDescripcion(candidato.dignidad);
+  if (!dignidad) {
+    return null;
+  }
+  const distrito = await distritoRepository.buscarPorParroquia({
+    codigoParroquia: candidato.parroquia,
+    dignidadId: dignidad.id
+  });
+  if (!distrito) {
+    // Si la dignidad tiene distritos en el cantón, la parroquia debe pertenecer a alguno
+    const distritosCanton = await distritoRepository.listarPorCanton({
+      codigoProvincia: candidato.provincia,
+      codigoCanton: candidato.canton,
+      dignidadId: dignidad.id
+    });
+    return distritosCanton.length > 0
+      ? `La parroquia seleccionada no pertenece a ningún distrito de ${candidato.dignidad}`
+      : null;
+  }
+  if (candidato.distrito && candidato.distrito != distrito.id) {
+    return `La parroquia seleccionada pertenece al distrito ${distrito.nombre}`;
+  }
+  candidato.distrito = distrito.id;
+  return null;
+}
 
 module.exports = {
   async getAll(req, res, next) {
@@ -40,11 +78,22 @@ module.exports = {
       const canton = await Canton.findByCodigo(candidato.canton, candidato.provincia);
       const parroquia = await Parroquia.findByCodigo(candidato.parroquia, candidato.provincia, candidato.canton);
 
+      /** Concejales: los candidatos van por distrito, explícito o el que contiene a la parroquia */
+      let distritoId = candidato.distrito || null;
+      if (!distritoId && candidato.parroquia && candidato.dignidad.id) {
+        const distrito = await distritoRepository.buscarPorParroquia({
+          codigoParroquia: candidato.parroquia,
+          dignidadId: candidato.dignidad.id
+        });
+        distritoId = distrito ? distrito.id : null;
+      }
+
       const candidatoParam = {
         "provincia": JSON.parse(JSON.stringify(provincia)).nombre,
         "canton": JSON.parse(JSON.stringify(canton)).nombre,
-        "parroquia": candidato.parroquia == null || candidato.parroquia == '' ? null : JSON.parse(JSON.stringify(parroquia)).nombre,
-        "dignidad": candidato.dignidad.descripcion
+        "parroquia": distritoId || candidato.parroquia == null || candidato.parroquia == '' ? null : JSON.parse(JSON.stringify(parroquia)).nombre,
+        "dignidad": candidato.dignidad.descripcion,
+        "distrito": distritoId
       }
       let data;
       if (candidato.dignidad.tipo == 'UNIPERSONAL') {
@@ -65,6 +114,10 @@ module.exports = {
   async create(req, res, next) {
     try {
       const candidato = req.body;
+      const errorDistrito = await validarDistrito(candidato);
+      if (errorDistrito) {
+        return res.status(400).json({ success: false, message: errorDistrito });
+      }
 
       if (candidato.parroquia != null) {
         const parroquiaResult = await Parroquia.findByCodigo(candidato.parroquia, candidato.provincia, candidato.canton);
@@ -101,6 +154,10 @@ module.exports = {
   async update(req, res, next) {
     try {
       const candidato = req.body;
+      const errorDistrito = await validarDistrito(candidato);
+      if (errorDistrito) {
+        return res.status(400).json({ success: false, message: errorDistrito });
+      }
       if (candidato.parroquia != null) {
         const parroquiaResult = await Parroquia.findByCodigo(candidato.parroquia, candidato.provincia, candidato.canton);
         candidato.parroquia = JSON.parse(JSON.stringify(parroquiaResult)).nombre;

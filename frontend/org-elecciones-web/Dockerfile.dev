@@ -1,0 +1,13 @@
+# Imagen de desarrollo del frontend: ng serve con live reload
+FROM node:16-alpine
+
+WORKDIR /app
+
+COPY package*.json .npmrc ./
+RUN npm install
+
+# El código se monta como volumen desde docker-compose.dev.yml
+EXPOSE 4200
+
+# --poll para detectar cambios en volúmenes montados desde Windows/macOS
+CMD ["npx", "ng", "serve", "--host", "0.0.0.0", "--poll", "2000", "--disable-host-check"]

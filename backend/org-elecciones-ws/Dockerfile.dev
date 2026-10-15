@@ -1,0 +1,13 @@
+# Imagen de desarrollo del backend: recarga en caliente con nodemon
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+# El código se monta como volumen desde docker-compose.dev.yml
+EXPOSE 3001
+
+# -L (legacy watch / polling) para que detecte cambios en volúmenes montados desde Windows/macOS
+CMD ["npx", "nodemon", "-L", "index.js"]

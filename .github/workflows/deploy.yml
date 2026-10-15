@@ -1,0 +1,67 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Evita dos despliegues simultáneos al mismo servidor
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to server
+    # Runner instalado en el propio servidor (ver README, sección 4).
+    # Está dentro de la red, así que no necesita VPN ni SSH.
+    runs-on: [self-hosted, linux, elecciones]
+    environment: production
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/elecciones' }}
+      COMPOSE_PROFILES: ${{ vars.COMPOSE_PROFILES }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Copia el código a una carpeta fija, para poder operar a mano con docker compose
+      # sin depender del workspace del runner (que se limpia en cada ejecución).
+      - name: Sync code
+        run: |
+          mkdir -p "$DEPLOY_PATH"
+          rsync -a --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude 'dist' \
+            --exclude '.angular' \
+            --exclude '.firebase' \
+            --exclude '.env' \
+            ./ "$DEPLOY_PATH/"
+
+      # Si existe el secreto ENV_FILE se escribe el .env; si no, se usa el que ya está en el servidor.
+      - name: Write .env
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -n "$ENV_FILE" ]; then
+            (umask 077 && printf '%s\n' "$ENV_FILE" > "$DEPLOY_PATH/.env")
+            echo ".env actualizado desde el secreto ENV_FILE"
+          elif [ -f "$DEPLOY_PATH/.env" ]; then
+            echo "Usando el .env existente en $DEPLOY_PATH"
+          else
+            echo "::error::No hay secreto ENV_FILE ni $DEPLOY_PATH/.env"
+            exit 1
+          fi
+
+      - name: Build & start containers
+        working-directory: ${{ env.DEPLOY_PATH }}
+        run: |
+          docker compose build --pull
+          docker compose up -d --remove-orphans --wait --wait-timeout 180
+          docker compose ps
+          docker image prune -f
+
+      - name: Show logs on failure
+        if: failure()
+        working-directory: ${{ env.DEPLOY_PATH }}
+        run: docker compose logs --tail=100 || true

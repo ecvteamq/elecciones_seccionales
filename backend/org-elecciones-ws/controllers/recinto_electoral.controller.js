@@ -1,78 +1,60 @@
-const RecintoElectoral = require("../models/recinto_electoral");
-const Provincia = require("../models/provincia");
-const Canton = require("../models/canton");
-const Parroquia = require("../models/parroquia");
+const ValidacionError = require('../services/errores/validacion.error');
 
-module.exports = {
-  async getAll(req, res, next) {
-    try {
-      const data = await RecintoElectoral.getAll();
-      return res.status(201).json(data);
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      return res.status(501).json({
-        success: false,
-        message: "Error al obtener los roles",
-      });
-    }
-  },
-  async create(req, res, next) {
-    try {
-      const recinto_electoral = req.body;
-      const data = await RecintoElectoral.create(recinto_electoral);
+/**
+ * Adaptador HTTP de los casos de uso de recintos electorales.
+ * El servicio se inyecta para poder probarlo sin base de datos.
+ *
+ * @param {object} deps
+ * @param {ReturnType<import('../services/recinto-electoral/recinto-electoral.service').crearRecintoElectoralService>} deps.recintoService
+ */
+function crearRecintoElectoralController({ recintoService }) {
 
-      return res.status(201).json({
-        success: true,
-        message: "El registro se realizo correctamente",
-        data: data.id,
-      });
-    } catch (error) {
-      console.log(error);
-      return res.status(501).json({
-        success: false,
-        message: "Error al crear el rol",
-      });
+    function responderError(res, error, mensaje) {
+        if (error instanceof ValidacionError) {
+            return res.status(400).json({ success: false, message: error.message, errors: error.detalles });
+        }
+        console.log(`Error: ${error}`);
+        return res.status(500).json({ success: false, message: mensaje });
     }
-  },
-  async getNumeroElectoresByCanton(req, res, next) {
-    try {
-      const body = req.body;
-      console.log("body:",body);
-      const canton = await Canton.findByCodigo(body.canton, body.provincia);
-      const data = await RecintoElectoral.getElectoresByCanton(JSON.parse(JSON.stringify(canton)).nombre);
-      return res.status(201).json(data);
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      return res.status(501).json({
-        success: false,
-        message: "Error al obtener numero de electores por cantón",
-      });
-    }
-  },
-  async getByFilter(req, res, next) {
-    try {
-      const recinto = req.body;
-      console.log("recinto body:", recinto);
-      const provincia = await Provincia.findByCodigo(recinto.provincia);
-      const canton = await Canton.findByCodigo(recinto.canton, recinto.provincia);
-      const parroquia = await Parroquia.findByCodigo(recinto.parroquia, recinto.provincia, recinto.canton);
 
-      const datos = {
-        "provincia": provincia == null ? null : JSON.parse(JSON.stringify(provincia)).nombre,
-        "canton": canton == null ? null : JSON.parse(JSON.stringify(canton)).nombre,
-        "parroquia": parroquia == null ? null : JSON.parse(JSON.stringify(parroquia)).nombre
-      }
-      console.log("recinto datos:", datos);
+    return {
+        async getAll(req, res) {
+            try {
+                return res.status(200).json(await recintoService.listarActivos());
+            } catch (error) {
+                return responderError(res, error, 'Error al obtener los recintos electorales');
+            }
+        },
 
-      const data = await RecintoElectoral.getByFilters(datos);
-      console.log(data.length);
-      return res.status(201).json(data);
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      return res.status(501).json({
-        success: false,
-        message: "Error al obtener recinto electoral : " + error.message,
-      });
-    }
-  }
-};
+        async getByFilter(req, res) {
+            try {
+                return res.status(200).json(await recintoService.buscarPorUbicacion(req.body || {}));
+            } catch (error) {
+                return responderError(res, error, 'Error al obtener recinto electoral');
+            }
+        },
+
+        async getNumeroElectoresByCanton(req, res) {
+            try {
+                return res.status(200).json(await recintoService.contarElectoresPorCanton(req.body || {}));
+            } catch (error) {
+                return responderError(res, error, 'Error al obtener numero de electores por cantón');
+            }
+        },
+
+        async create(req, res) {
+            try {
+                const id = await recintoService.crear(req.body || {});
+                return res.status(201).json({
+                    success: true,
+                    message: 'El registro se realizo correctamente',
+                    data: id,
+                });
+            } catch (error) {
+                return responderError(res, error, 'Error al crear el recinto electoral');
+            }
+        },
+    };
+}
+
+module.exports = { crearRecintoElectoralController };
